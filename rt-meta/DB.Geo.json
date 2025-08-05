@@ -1,0 +1,16 @@
+{
+  "version": "rt.db.v1",
+  "path": "DB.Geo",
+  "description": "Geo model",
+  "columns": {
+    "id": { "type": "PK", "query": ["=", "in"] },
+    "latitude": { "type": "Float64", "query": ["=", ">", "<"] },
+    "longitude": { "type": "Float64", "query": ["=", ">", "<"] }
+  },
+  "views": {
+    "Full": {
+      "cache": "30d",
+      "columns": ["id", "latitude", "longitude"]
+    }
+  }
+}

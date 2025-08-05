@@ -1,0 +1,22 @@
+{
+  "version": "rt.db.v1",
+  "path": "DB.City",
+  "description": "City db model",
+  "columns": {
+    "id": { "type": "PK", "query": ["=", "in"] },
+    "name": {
+      "type": "String256",
+      "query": ["=", "in", "like"],
+      "order": true,
+      "description": "City name"
+    },
+    "geo": { "type": "LK", "query": ["=", "in"] },
+    "active": { "type": "Bool", "query": ["=", "in"] }
+  },
+  "views": {
+    "Full": {
+      "cache": "30d",
+      "columns": ["id", "name", "geo:DB.Geo@Full", "active"]
+    }
+  }
+}

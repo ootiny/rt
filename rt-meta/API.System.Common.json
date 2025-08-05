@@ -1,0 +1,22 @@
+{
+  "apiVersion": "rt.api.v1",
+  "path": "API.System.Common",
+  "definitions": {
+    "Geo": {
+      "attributes": [
+        {
+          "name": "latitude",
+          "type": "Float64",
+          "required": true,
+          "description": "The latitude of the geo location"
+        },
+        {
+          "name": "longitude",
+          "type": "Float64",
+          "required": true,
+          "description": "The longitude of the geo location"
+        }
+      ]
+    }
+  }
+}

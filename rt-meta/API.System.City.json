@@ -1,0 +1,56 @@
+{
+  "version": "rt.api.v1",
+  "path": "API.System.City",
+  "description": "City API",
+  "imports": {
+    "GeoLocation": "API.System.Common.Geo"
+  },
+  "definitions": {
+    "City": {
+      "description": "A city",
+      "attributes": [
+        {
+          "name": "name",
+          "type": "String",
+          "required": true,
+          "description": "The name of the city"
+        },
+        {
+          "name": "location",
+          "type": "GeoLocation",
+          "required": true,
+          "description": "The location of the city"
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "description": "The description of the city"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "GetCity": {
+      "description": "Get a city by id",
+      "method": "GET",
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String",
+          "required": true,
+          "description": "The id of the city"
+        }
+      ],
+      "returns": [
+        {
+          "type": "City",
+          "description": "The city"
+        },
+        {
+          "type": "Error",
+          "description": "The error"
+        }
+      ]
+    }
+  }
+}

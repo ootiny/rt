@@ -1,0 +1,28 @@
+{
+  "listen": "0.0.0.0:3333",
+  "outputs": [
+    {
+      "kind": "client",
+      "language": "typescript",
+      "dir": "${ProjectDir}/web/gapi"
+    },
+    {
+      "kind": "server",
+      "language": "golang",
+      "dir": "${ProjectDir}/server/gapi",
+      "goModule": "github.com/ootiny/gapi/server/gapi",
+      "httpEngine": "net/http"
+    }
+  ],
+  "apis": [],
+  "tables": [],
+  "database": {
+    "driver": "postgres",
+    "host": "127.0.0.1",
+    "port": 12345,
+    "user": "postgres",
+    "password": "ts2019",
+    "dbName": "test",
+    "cacheSize": "1g"
+  }
+}

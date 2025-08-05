@@ -1,9 +1,9 @@
 {
   "version": "rt.api.v1",
-  "path": "API.System.City",
+  "namespace": "API.System.City",
   "description": "City API",
   "definitions": {
-    "City": {
+    "CityTest": {
       "description": "A city",
       "attributes": [
         {
@@ -40,7 +40,7 @@
       ],
       "returns": [
         {
-          "type": "City",
+          "type": "DB.City@Full",
           "description": "The city"
         },
         {

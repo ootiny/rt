@@ -1,6 +1,6 @@
 {
   "version": "rt.db.v1",
-  "path": "DB.Geo",
+  "table": "DB.Geo",
   "description": "Geo model",
   "columns": {
     "id": { "type": "PK", "query": ["=", "in"] },

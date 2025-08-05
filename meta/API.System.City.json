@@ -2,9 +2,6 @@
   "version": "rt.api.v1",
   "path": "API.System.City",
   "description": "City API",
-  "imports": {
-    "GeoLocation": "API.System.Common.Geo"
-  },
   "definitions": {
     "City": {
       "description": "A city",
@@ -17,7 +14,7 @@
         },
         {
           "name": "location",
-          "type": "GeoLocation",
+          "type": "DB.Geo@Full",
           "required": true,
           "description": "The location of the city"
         },

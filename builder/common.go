@@ -37,14 +37,14 @@ type IBuilder interface {
 }
 
 type BuildContext struct {
-	rootConfig      GApiRootConfig
-	buildConfig     GApiConfig
-	output          GApiRootOutputConfig
+	rtConfig        RTConfig
+	buildConfig     APIConfig
+	output          RTOutputConfig
 	rootConfigPath  string
 	buildConfigPath string
 }
 
-type GApiRootOutputConfig struct {
+type RTOutputConfig struct {
 	Kind       string `json:"kind" required:"true"`
 	Language   string `json:"language" required:"true"`
 	Dir        string `json:"dir" required:"true"`
@@ -52,55 +52,49 @@ type GApiRootOutputConfig struct {
 	HttpEngine string `json:"httpEngine"`
 }
 
-type GApiRootConfig struct {
-	Listen  string                 `json:"listen"`
-	Outputs []GApiRootOutputConfig `json:"outputs"`
+type RTConfig struct {
+	Listen  string           `json:"listen"`
+	Outputs []RTOutputConfig `json:"outputs"`
 }
 
-type GApiDefinitionAttributeConfig struct {
+type APIDefinitionAttributeConfig struct {
 	Name        string `json:"name" required:"true"`
 	Type        string `json:"type" required:"true"`
 	Required    bool   `json:"required"`
 	Description string `json:"description"`
 }
 
-type GApiDefinitionImportConfig struct {
-	Package string `json:"package"`
-	Name    string `json:"name"`
+type APIDefinitionConfig struct {
+	Description string                         `json:"description"`
+	Attributes  []APIDefinitionAttributeConfig `json:"attributes"`
 }
 
-type GApiDefinitionConfig struct {
-	Description string                          `json:"description"`
-	Attributes  []GApiDefinitionAttributeConfig `json:"attributes"`
-	Import      *GApiDefinitionImportConfig     `json:"import"`
-}
-
-type GApiActionParameterConfig struct {
+type APIActionParameterConfig struct {
 	Name        string `json:"name" required:"true"`
 	Type        string `json:"type" required:"true"`
 	Required    bool   `json:"required"`
 	Description string `json:"description"`
 }
 
-type GApiActionReturnConfig struct {
+type APIActionReturnConfig struct {
 	Type        string `json:"type" required:"true"`
 	Description string `json:"description"`
 }
 
-type GApiActionConfig struct {
-	Description string                      `json:"description"`
-	Method      string                      `json:"method" required:"true"`
-	Parameters  []GApiActionParameterConfig `json:"parameters"`
-	Returns     []GApiActionReturnConfig    `json:"returns"`
+type APIActionConfig struct {
+	Description string                     `json:"description"`
+	Method      string                     `json:"method" required:"true"`
+	Parameters  []APIActionParameterConfig `json:"parameters"`
+	Return      APIActionReturnConfig      `json:"returns"`
 }
 
-type GApiConfig struct {
-	Version     string                          `json:"version" required:"true"`
-	ApiPath     string                          `json:"apiPath" required:"true"`
-	Package     string                          `json:"package" required:"true"`
-	Description string                          `json:"description"`
-	Definitions map[string]GApiDefinitionConfig `json:"definitions" required:"true"`
-	Actions     map[string]GApiActionConfig     `json:"actions"`
+type APIConfig struct {
+	Version     string                         `json:"version" required:"true"`
+	ApiPath     string                         `json:"apiPath" required:"true"`
+	Package     string                         `json:"package" required:"true"`
+	Description string                         `json:"description"`
+	Definitions map[string]APIDefinitionConfig `json:"definitions" required:"true"`
+	Actions     map[string]APIActionConfig     `json:"actions"`
 }
 
 func ParseProjectDir(filePath string, projectDir string) (string, error) {
@@ -154,17 +148,17 @@ func UnmarshalConfig(filePath string, v any) error {
 	}
 }
 
-func LoadConfig(filePath string) (GApiConfig, error) {
-	var config GApiConfig
+func LoadConfig(filePath string) (APIConfig, error) {
+	var config APIConfig
 
 	if err := UnmarshalConfig(filePath, &config); err != nil {
-		return GApiConfig{}, fmt.Errorf("failed to parse config file: %w", err)
+		return APIConfig{}, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
 	return config, nil
 }
 
-func LoadRootConfig() (GApiRootConfig, string, error) {
+func LoadRootConfig() (RTConfig, string, error) {
 	configPath := ""
 
 	if len(os.Args) > 1 {
@@ -174,8 +168,8 @@ func LoadRootConfig() (GApiRootConfig, string, error) {
 	}
 
 	if configPath == "" {
-		// 在当前目录下，依次寻找 .gapi.json .gapi.yaml .gapi.yml
-		searchFiles := []string{"./.gapi.json", "./.gapi.yaml", "./.gapi.yml"}
+		// 在当前目录下，依次寻找 .rt.json .rt.yaml .rt.yml
+		searchFiles := []string{"./.rt.json", "./.rt.yaml", "./.rt.yml"}
 		for _, file := range searchFiles {
 			if fileInfo, err := os.Stat(file); err == nil && !fileInfo.IsDir() {
 				configPath = file
@@ -186,16 +180,16 @@ func LoadRootConfig() (GApiRootConfig, string, error) {
 
 	if !filepath.IsAbs(configPath) {
 		if absPath, err := filepath.Abs(configPath); err != nil {
-			return GApiRootConfig{}, "", fmt.Errorf("failed to convert config path to absolute path: %v", err)
+			return RTConfig{}, "", fmt.Errorf("failed to convert config path to absolute path: %v", err)
 		} else {
 			configPath = absPath
 		}
 	}
 
-	var config GApiRootConfig
+	var config RTConfig
 
 	if err := UnmarshalConfig(configPath, &config); err != nil {
-		return GApiRootConfig{}, "", fmt.Errorf("failed to parse config file: %w", err)
+		return RTConfig{}, "", fmt.Errorf("failed to parse config file: %w", err)
 	}
 
 	projectDir := filepath.Dir(configPath)
@@ -204,7 +198,7 @@ func LoadRootConfig() (GApiRootConfig, string, error) {
 		var err error
 		config.Outputs[i].Dir, err = ParseProjectDir(output.Dir, projectDir)
 		if err != nil {
-			return GApiRootConfig{}, "", fmt.Errorf("failed to parse output dir: %w", err)
+			return RTConfig{}, "", fmt.Errorf("failed to parse output dir: %w", err)
 		}
 
 		if !filepath.IsAbs(config.Outputs[i].Dir) {
@@ -221,19 +215,19 @@ func Output() error {
 		log.Panicf("Failed to load config: %v", err)
 	}
 
-	versions := []string{"gapi", "gapi.v1"}
+	versions := []string{"rt.api.v1", "rt.db.v1"}
 	projectDir := filepath.Dir(rootConfigPath)
-	log.Printf("gapi: config file: %s\n", rootConfigPath)
-	log.Printf("gapi: project dir: %s\n", projectDir)
+	log.Printf("rt: config file: %s\n", rootConfigPath)
+	log.Printf("rt: project dir: %s\n", projectDir)
 
 	for _, output := range rootConfig.Outputs {
 		if output.HttpEngine != "" {
-			systemDir := filepath.Join(output.Dir, "__gapi_system__")
+			systemDir := filepath.Join(output.Dir, "_rt_system_")
 			assetsFile := fmt.Sprintf(
 				"assets/%s/%s/%s/%s.%s",
 				output.Language,
 				output.Kind,
-				"__gapi_system__",
+				"_rt_system_",
 				engineMap[output.HttpEngine],
 				languageTailMap[output.Language],
 			)
@@ -264,7 +258,7 @@ func Output() error {
 			switch filepath.Ext(path) {
 			case ".json", ".yaml", ".yml":
 				if err := UnmarshalConfig(path, &header); err != nil {
-					return nil // Not a gapi config file, just ignore.  continue walking
+					return nil // Not a rt config file, just ignore.  continue walking
 				} else if slices.Contains(versions, header.Version) {
 					return OutputFile(rootConfig, rootConfigPath, path, output) // output file
 				} else {
@@ -283,14 +277,14 @@ func Output() error {
 	return nil
 }
 
-func OutputFile(rootConfig GApiRootConfig, rootConfigPath string, buildConfigPath string, output GApiRootOutputConfig) error {
+func OutputFile(rootConfig RTConfig, rootConfigPath string, buildConfigPath string, output RTOutputConfig) error {
 	if buildConfig, err := LoadConfig(buildConfigPath); err != nil {
 		return fmt.Errorf("failed to load config file: %w", err)
 	} else {
 		var builder IBuilder
 		buildContext := BuildContext{
 			output:          output,
-			rootConfig:      rootConfig,
+			rtConfig:        rootConfig,
 			buildConfig:     buildConfig,
 			rootConfigPath:  rootConfigPath,
 			buildConfigPath: buildConfigPath,

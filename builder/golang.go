@@ -7,11 +7,6 @@ import (
 	"strings"
 )
 
-func toGolangImport(packageName string) string {
-	packageName = strings.ReplaceAll(packageName, "/", "_")
-	return "__" + packageName
-}
-
 func toGolangName(name string) string {
 	if name[0] >= 'a' && name[0] <= 'z' {
 		return strings.ToUpper(name[:1]) + name[1:]
@@ -76,7 +71,7 @@ package %s
 
 	imports := []string{
 		fmt.Sprintf(
-			"\t__system \"%s/__gapi_system__\"",
+			"\"%s/_rt_system_\"",
 			p.output.GoModule,
 		),
 	}
@@ -86,29 +81,7 @@ package %s
 	actions := []string{}
 
 	for name, define := range p.buildConfig.Definitions {
-		if define.Import != nil {
-			if len(define.Attributes) > 0 {
-				return fmt.Errorf("%s can not set attributes when imported", name)
-			}
-
-			if p.output.GoModule == "" {
-				return fmt.Errorf("goModule must be set in %s, when use imported define", p.rootConfigPath)
-			}
-
-			imports = append(imports, fmt.Sprintf(
-				"\t%s \"%s/%s\"",
-				toGolangImport(define.Import.Package),
-				p.output.GoModule,
-				define.Import.Package,
-			))
-
-			defines = append(defines, fmt.Sprintf(
-				"type %s = %s.%s\n",
-				name,
-				toGolangImport(define.Import.Package),
-				define.Import.Name,
-			))
-		} else if len(define.Attributes) > 0 {
+		if len(define.Attributes) > 0 {
 			attributes := []string{}
 			for _, attribute := range define.Attributes {
 				if attribute.Required {
@@ -143,9 +116,9 @@ package %s
 				toGolangType(parameter.Type),
 			))
 		}
-		returns := []string{}
-		for _, ret := range action.Returns {
-			returns = append(returns, toGolangType(ret.Type))
+		returns := []string{
+			toGolangType(action.Return.Type),
+			"Error",
 		}
 
 		actions = append(actions, fmt.Sprintf(

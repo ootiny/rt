@@ -4,10 +4,18 @@ type TypescriptBuilder struct {
 	BuildContext
 }
 
-func (p *TypescriptBuilder) BuildServer() error {
+func (p *TypescriptBuilder) BuildAPIServer() error {
 	return nil
 }
 
-func (p *TypescriptBuilder) BuildClient() error {
+func (p *TypescriptBuilder) BuildAPIClient() error {
+	return nil
+}
+
+func (p *TypescriptBuilder) BuildDBServer() error {
+	return nil
+}
+
+func (p *TypescriptBuilder) BuildDBClient() error {
 	return nil
 }

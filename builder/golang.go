@@ -7,6 +7,16 @@ import (
 	"strings"
 )
 
+func toGolangFolderByNamespace(namespace string) string {
+	//  change all namespace to lowercase
+	namespace = strings.ToLower(namespace)
+
+	// replace . with _
+	namespace = strings.ReplaceAll(namespace, ".", "_")
+
+	return namespace
+}
+
 func toGolangName(name string) string {
 	if name[0] >= 'a' && name[0] <= 'z' {
 		return strings.ToUpper(name[:1]) + name[1:]
@@ -55,19 +65,21 @@ type GolangBuilder struct {
 	BuildContext
 }
 
-func (p *GolangBuilder) BuildServer() error {
-	if p.buildConfig.Package == "" {
-		return fmt.Errorf("package is required")
+func (p *GolangBuilder) BuildAPIServer() error {
+	if p.buildConfig.Namespace == "" {
+		return fmt.Errorf("namespace is required")
 	}
 
-	outDir := filepath.Join(p.output.Dir, p.buildConfig.Package)
+	nsFolder := toGolangFolderByNamespace(p.buildConfig.Namespace)
+
+	outDir := filepath.Join(p.output.Dir, nsFolder)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	header := fmt.Sprintf(`// %s: %s
 package %s
-`, BuilderStartTag, BuilderDescription, p.buildConfig.Package)
+`, BuilderStartTag, BuilderDescription, nsFolder)
 
 	imports := []string{
 		fmt.Sprintf(
@@ -146,7 +158,7 @@ package %s
 
 	registerContent := fmt.Sprintf(
 		"func init() {\n\t__system.RegisterHandler(\"%s\", func(w __system.IResponse, r __system.IRequest) {\n\n\t})\n}",
-		p.buildConfig.ApiPath,
+		p.buildConfig.Namespace,
 	)
 
 	content := fmt.Sprintf(
@@ -159,9 +171,17 @@ package %s
 		BuilderEndTag,
 	)
 
-	return os.WriteFile(filepath.Join(outDir, "gapi.go"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(outDir, "rt.go"), []byte(content), 0644)
 }
 
-func (p *GolangBuilder) BuildClient() error {
+func (p *GolangBuilder) BuildAPIClient() error {
+	return nil
+}
+
+func (p *GolangBuilder) BuildDBServer() error {
+	return nil
+}
+
+func (p *GolangBuilder) BuildDBClient() error {
 	return nil
 }

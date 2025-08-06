@@ -31,16 +31,25 @@ var languageTailMap = map[string]string{
 	"typescript": "ts",
 }
 
+type ConfigKind int
+
+const (
+	ConfigKindAPI ConfigKind = iota
+	ConfigKindDB
+)
+
 type IBuilder interface {
-	BuildServer() error
-	BuildClient() error
+	BuildAPIServer() error
+	BuildAPIClient() error
+	BuildDBServer() error
+	BuildDBClient() error
 }
 
 type BuildContext struct {
 	rtConfig        RTConfig
 	buildConfig     APIConfig
 	output          RTOutputConfig
-	rootConfigPath  string
+	rtConfigPath    string
 	buildConfigPath string
 }
 
@@ -90,8 +99,7 @@ type APIActionConfig struct {
 
 type APIConfig struct {
 	Version     string                         `json:"version" required:"true"`
-	ApiPath     string                         `json:"apiPath" required:"true"`
-	Package     string                         `json:"package" required:"true"`
+	Namespace   string                         `json:"namespace" required:"true"`
 	Description string                         `json:"description"`
 	Definitions map[string]APIDefinitionConfig `json:"definitions" required:"true"`
 	Actions     map[string]APIActionConfig     `json:"actions"`
@@ -158,7 +166,7 @@ func LoadConfig(filePath string) (APIConfig, error) {
 	return config, nil
 }
 
-func LoadRootConfig() (RTConfig, string, error) {
+func LoadRtConfig() (RTConfig, string, error) {
 	configPath := ""
 
 	if len(os.Args) > 1 {
@@ -210,17 +218,18 @@ func LoadRootConfig() (RTConfig, string, error) {
 }
 
 func Output() error {
-	rootConfig, rootConfigPath, err := LoadRootConfig()
+	rtConfig, rtConfigPath, err := LoadRtConfig()
 	if err != nil {
 		log.Panicf("Failed to load config: %v", err)
 	}
 
-	versions := []string{"rt.api.v1", "rt.db.v1"}
-	projectDir := filepath.Dir(rootConfigPath)
-	log.Printf("rt: config file: %s\n", rootConfigPath)
+	apiVersions := []string{"rt.api.v1"}
+	dbVersions := []string{"rt.db.v1"}
+	projectDir := filepath.Dir(rtConfigPath)
 	log.Printf("rt: project dir: %s\n", projectDir)
+	log.Printf("rt: config file: %s\n", rtConfigPath)
 
-	for _, output := range rootConfig.Outputs {
+	for _, output := range rtConfig.Outputs {
 		if output.HttpEngine != "" {
 			systemDir := filepath.Join(output.Dir, "_rt_system_")
 			assetsFile := fmt.Sprintf(
@@ -259,8 +268,10 @@ func Output() error {
 			case ".json", ".yaml", ".yml":
 				if err := UnmarshalConfig(path, &header); err != nil {
 					return nil // Not a rt config file, just ignore.  continue walking
-				} else if slices.Contains(versions, header.Version) {
-					return OutputFile(rootConfig, rootConfigPath, path, output) // output file
+				} else if slices.Contains(apiVersions, header.Version) {
+					return OutputFile(ConfigKindAPI, rtConfig, rtConfigPath, path, output) // output file
+				} else if slices.Contains(dbVersions, header.Version) {
+					return OutputFile(ConfigKindDB, rtConfig, rtConfigPath, path, output) // output file
 				} else {
 					return nil
 				}
@@ -277,16 +288,16 @@ func Output() error {
 	return nil
 }
 
-func OutputFile(rootConfig RTConfig, rootConfigPath string, buildConfigPath string, output RTOutputConfig) error {
+func OutputFile(kind ConfigKind, rtConfig RTConfig, rtConfigPath string, buildConfigPath string, output RTOutputConfig) error {
 	if buildConfig, err := LoadConfig(buildConfigPath); err != nil {
 		return fmt.Errorf("failed to load config file: %w", err)
 	} else {
 		var builder IBuilder
 		buildContext := BuildContext{
 			output:          output,
-			rtConfig:        rootConfig,
+			rtConfig:        rtConfig,
 			buildConfig:     buildConfig,
-			rootConfigPath:  rootConfigPath,
+			rtConfigPath:    rtConfigPath,
 			buildConfigPath: buildConfigPath,
 		}
 
@@ -303,11 +314,25 @@ func OutputFile(rootConfig RTConfig, rootConfigPath string, buildConfigPath stri
 			return fmt.Errorf("unsupported language: %s", output.Language)
 		}
 
-		switch output.Kind {
-		case "server":
-			return builder.BuildServer()
-		case "client":
-			return builder.BuildClient()
+		switch kind {
+		case ConfigKindAPI:
+			switch output.Kind {
+			case "server":
+				return builder.BuildAPIServer()
+			case "client":
+				return builder.BuildAPIClient()
+			default:
+				return fmt.Errorf("unsupported kind: %s", output.Kind)
+			}
+		case ConfigKindDB:
+			switch output.Kind {
+			case "server":
+				return builder.BuildDBServer()
+			case "client":
+				return builder.BuildDBClient()
+			default:
+				return fmt.Errorf("unsupported kind: %s", output.Kind)
+			}
 		default:
 			return fmt.Errorf("unsupported kind: %s", output.Kind)
 		}

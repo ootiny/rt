@@ -9,8 +9,8 @@
     {
       "kind": "server",
       "language": "golang",
-      "dir": "${ProjectDir}/server/gapi",
-      "goModule": "github.com/ootiny/gapi/server/gapi",
+      "dir": "${ProjectDir}/libs/rt",
+      "goModule": "github.com/ootiny/libs/rt",
       "httpEngine": "net/http"
     }
   ],

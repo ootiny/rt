@@ -3,43 +3,38 @@
   "namespace": "API.System.City",
   "description": "City API",
   "definitions": {
-    "CityTest": {
+    "CityList": {
       "description": "A city",
       "attributes": [
         {
-          "name": "name",
-          "type": "String",
+          "name": "from",
+          "type": "Int64",
           "required": true,
           "description": "The name of the city"
         },
         {
-          "name": "location",
-          "type": "DB.Geo@Full",
+          "name": "list",
+          "type": "List<DB.City@Full>",
           "required": true,
           "description": "The location of the city"
-        },
-        {
-          "name": "description",
-          "type": "String",
-          "description": "The description of the city"
         }
       ]
     }
   },
   "actions": {
-    "GetCity": {
-      "description": "Get a city by id",
+    "GetCityList": {
+      "description": "Get city list",
       "method": "GET",
       "parameters": [
         {
-          "name": "id",
+          "name": "country",
           "type": "String",
           "required": true,
-          "description": "The id of the city"
+          "description": "The country of the city"
         }
       ],
       "return": {
-        "type": "DB.City@Full",
+        "type": "API.System.City@CityList",
         "description": "The city"
       }
     }

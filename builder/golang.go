@@ -7,14 +7,18 @@ import (
 	"strings"
 )
 
-func toGolangFolderByNamespace(namespace string) string {
+func toGolangFolderByNamespace(location string, namespace string) string {
 	//  change all namespace to lowercase
 	namespace = strings.ToLower(namespace)
 
 	// replace . with _
 	namespace = strings.ReplaceAll(namespace, ".", "_")
 
-	return namespace
+	if location == MainLocation {
+		return namespace
+	} else {
+		return location + "_" + namespace
+	}
 }
 
 func toGolangName(name string) string {
@@ -25,54 +29,67 @@ func toGolangName(name string) string {
 	}
 }
 
-func toGolangType(name string) string {
+func toGolangType(goModule string, location string, name string) (string, string) {
 	name = strings.TrimSpace(name)
 
 	switch name {
 	case "String":
-		return "string"
+		return "string", ""
 	case "Float64":
-		return "float64"
+		return "float64", ""
 	case "Int64":
-		return "int64"
+		return "int64", ""
 	case "Bool":
-		return "bool"
+		return "bool", ""
 	case "Byte":
-		return "byte"
+		return "byte", ""
 	case "Bytes":
-		return "[]byte"
-	case "Cookies":
-		return "map[string]string"
-	case "Headers":
-		return "map[string]string"
+		return "[]byte", ""
 	case "Error":
-		return "error"
+		return "error", ""
 	default:
 		// if name is List<innter>, then return []inner
 		if strings.HasPrefix(name, "List<") && strings.HasSuffix(name, ">") {
-			innerType := name[5 : len(name)-1] // Remove "List<" and ">"
-			return fmt.Sprintf("[]%s", toGolangType(innerType))
+			innerType := name[5 : len(name)-1]
+			ret, pkg := toGolangType(goModule, location, innerType)
+			return fmt.Sprintf("[]%s", ret), pkg
 		} else if strings.HasPrefix(name, "Map<") && strings.HasSuffix(name, ">") {
 			innerType := name[4 : len(name)-1] // Remove "Map<" and ">"
-			return fmt.Sprintf("map[string]%s", toGolangType(innerType))
+			ret, pkg := toGolangType(goModule, location, innerType)
+			return fmt.Sprintf("map[string]%s", ret), pkg
+		} else if strings.HasPrefix(name, "DB.") || strings.HasPrefix(name, "API.") {
+			nameArr := strings.Split(name, "@")
+			if len(nameArr) == 2 {
+				pkgName := toGolangFolderByNamespace(location, nameArr[0])
+				pkg := fmt.Sprintf(
+					"\t\"%s/%s/%s\"",
+					goModule,
+					location,
+					pkgName,
+				)
+
+				return fmt.Sprintf("%s.%s", pkgName, nameArr[1]), pkg
+			} else {
+				return name, ""
+			}
 		} else {
-			return name
+			return name, ""
 		}
 	}
 }
 
-type GolangBuilder struct {
+type GoBuilder struct {
 	BuildContext
 }
 
-func (p *GolangBuilder) BuildAPIServer() error {
-	if p.buildConfig.Namespace == "" {
+func (p *GoBuilder) Build() error {
+	if p.apiConfig.Namespace == "" {
 		return fmt.Errorf("namespace is required")
 	}
 
-	nsFolder := toGolangFolderByNamespace(p.buildConfig.Namespace)
+	nsFolder := toGolangFolderByNamespace(p.location, p.apiConfig.Namespace)
 
-	outDir := filepath.Join(p.output.Dir, nsFolder)
+	outDir := filepath.Join(p.output.Dir, p.location, nsFolder)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
@@ -81,33 +98,33 @@ func (p *GolangBuilder) BuildAPIServer() error {
 package %s
 `, BuilderStartTag, BuilderDescription, nsFolder)
 
-	imports := []string{
-		fmt.Sprintf(
-			"\"%s/_rt_system_\"",
-			p.output.GoModule,
-		),
-	}
+	imports := []string{}
 
 	defines := []string{}
 
 	actions := []string{}
 
-	for name, define := range p.buildConfig.Definitions {
+	for name, define := range p.apiConfig.Definitions {
 		if len(define.Attributes) > 0 {
 			attributes := []string{}
 			for _, attribute := range define.Attributes {
+				attrType, pkg := toGolangType(p.output.GoModule, p.location, attribute.Type)
+				if pkg != "" {
+					imports = append(imports, pkg)
+				}
+
 				if attribute.Required {
 					attributes = append(attributes, fmt.Sprintf(
-						"\t%s %s`json:\"%s\" required:\"true\"`",
+						"\t%s %s `json:\"%s\" required:\"true\"`",
 						toGolangName(attribute.Name),
-						toGolangType(attribute.Type),
+						attrType,
 						attribute.Name,
 					))
 				} else {
 					attributes = append(attributes, fmt.Sprintf(
-						"\t%s %s`json:\"%s\"`",
+						"\t%s %s `json:\"%s\"`",
 						toGolangName(attribute.Name),
-						toGolangType(attribute.Type),
+						attrType,
 						attribute.Name,
 					))
 				}
@@ -118,33 +135,34 @@ package %s
 		}
 	}
 
-	// TODO: create actions
-	for name, action := range p.buildConfig.Actions {
-		parameters := []string{}
-		for _, parameter := range action.Parameters {
-			parameters = append(parameters, fmt.Sprintf(
-				"%s %s",
-				parameter.Name,
-				toGolangType(parameter.Type),
-			))
-		}
-		returns := []string{
-			toGolangType(action.Return.Type),
-			"Error",
-		}
+	// // TODO: create actions
+	// for name, action := range p.apiConfig.Actions {
+	// 	parameters := []string{}
+	// 	for _, parameter := range action.Parameters {
+	// 		parameters = append(parameters, fmt.Sprintf(
+	// 			"%s %s",
+	// 			parameter.Name,
+	// 			toGolangType(parameter.Type),
+	// 		))
+	// 	}
 
-		actions = append(actions, fmt.Sprintf(
-			"type Func%s = func(%s) (%s)",
-			name,
-			strings.Join(parameters, ", "),
-			strings.Join(returns, ", "),
-		))
-		actions = append(actions, fmt.Sprintf(
-			"type Hook%s = func(fn Func%s) error\n",
-			name,
-			name,
-		))
-	}
+	// 	returns := []string{
+	// 		toGolangType(action.Return.Type),
+	// 		"Error",
+	// 	}
+
+	// 	actions = append(actions, fmt.Sprintf(
+	// 		"type Func%s = func(%s) (%s)",
+	// 		name,
+	// 		strings.Join(parameters, ", "),
+	// 		strings.Join(returns, ", "),
+	// 	))
+	// 	actions = append(actions, fmt.Sprintf(
+	// 		"type Hook%s = func(fn Func%s) error\n",
+	// 		name,
+	// 		name,
+	// 	))
+	// }
 
 	importsContent := ""
 	if len(imports) > 0 {
@@ -156,10 +174,11 @@ package %s
 		defineContent = strings.Join(defines, "\n")
 	}
 
-	registerContent := fmt.Sprintf(
-		"func init() {\n\t__system.RegisterHandler(\"%s\", func(w __system.IResponse, r __system.IRequest) {\n\n\t})\n}",
-		p.buildConfig.Namespace,
-	)
+	registerContent := ""
+	// registerContent := fmt.Sprintf(
+	// 	"func init() {\n\t__system.RegisterHandler(\"%s\", func(w __system.IResponse, r __system.IRequest) {\n\n\t})\n}",
+	// 	p.apiConfig.Namespace,
+	// )
 
 	content := fmt.Sprintf(
 		"%s\n%s\n%s\n%s\n%s\n//%s",
@@ -174,14 +193,6 @@ package %s
 	return os.WriteFile(filepath.Join(outDir, "rt.go"), []byte(content), 0644)
 }
 
-func (p *GolangBuilder) BuildAPIClient() error {
-	return nil
-}
-
-func (p *GolangBuilder) BuildDBServer() error {
-	return nil
-}
-
-func (p *GolangBuilder) BuildDBClient() error {
+func (p *GoBuilder) BuildDB(folder string) error {
 	return nil
 }

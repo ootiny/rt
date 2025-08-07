@@ -3,14 +3,15 @@
   "table": "DB.City",
   "description": "City db model",
   "columns": {
-    "id": { "type": "PK", "query": ["=", "in"] },
+    "id": { "type": "PK", "query": ["=", "in"], "required": true },
     "name": {
       "type": "String256",
       "query": ["=", "in", "like"],
       "order": true,
-      "description": "City name"
+      "description": "City name",
+      "required": true
     },
-    "geo": { "type": "Object<DB.Geo>", "query": ["=", "in"] },
+    "geo": { "type": "DB.Geo", "query": ["=", "in"] },
     "active": { "type": "Bool", "query": ["=", "in"] }
   },
   "views": {

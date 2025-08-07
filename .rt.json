@@ -8,9 +8,9 @@
     },
     {
       "kind": "server",
-      "language": "golang",
+      "language": "go",
       "dir": "${ProjectDir}/libs/rt",
-      "goModule": "github.com/ootiny/libs/rt",
+      "goModule": "github.com/ootiny/rt/libs/rt",
       "httpEngine": "net/http"
     }
   ],

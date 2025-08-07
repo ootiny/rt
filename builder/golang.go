@@ -135,34 +135,49 @@ package %s
 		}
 	}
 
-	// // TODO: create actions
-	// for name, action := range p.apiConfig.Actions {
-	// 	parameters := []string{}
-	// 	for _, parameter := range action.Parameters {
-	// 		parameters = append(parameters, fmt.Sprintf(
-	// 			"%s %s",
-	// 			parameter.Name,
-	// 			toGolangType(parameter.Type),
-	// 		))
-	// 	}
+	if len(p.apiConfig.Actions) > 0 {
+		imports = append(imports, fmt.Sprintf(
+			"\t\"%s/%s/_rt_system_\"",
+			p.output.GoModule,
+			p.location,
+		))
 
-	// 	returns := []string{
-	// 		toGolangType(action.Return.Type),
-	// 		"Error",
-	// 	}
+		for name, action := range p.apiConfig.Actions {
+			parameters := []string{}
+			for _, parameter := range action.Parameters {
+				typeName, typePkg := toGolangType(p.output.GoModule, p.location, parameter.Type)
+				if typePkg != "" {
+					imports = append(imports, typePkg)
+				}
+				parameters = append(parameters, fmt.Sprintf(
+					"%s %s",
+					parameter.Name,
+					typeName,
+				))
+			}
 
-	// 	actions = append(actions, fmt.Sprintf(
-	// 		"type Func%s = func(%s) (%s)",
-	// 		name,
-	// 		strings.Join(parameters, ", "),
-	// 		strings.Join(returns, ", "),
-	// 	))
-	// 	actions = append(actions, fmt.Sprintf(
-	// 		"type Hook%s = func(fn Func%s) error\n",
-	// 		name,
-	// 		name,
-	// 	))
-	// }
+			returnType, typePkg := toGolangType(p.output.GoModule, p.location, action.Return.Type)
+			if typePkg != "" {
+				imports = append(imports, typePkg)
+			}
+			returns := []string{
+				returnType,
+				"error",
+			}
+
+			actions = append(actions, fmt.Sprintf(
+				"type Func%s = func(%s) (%s)",
+				name,
+				strings.Join(parameters, ", "),
+				strings.Join(returns, ", "),
+			))
+			actions = append(actions, fmt.Sprintf(
+				"type Hook%s = func(fn Func%s) error\n",
+				name,
+				name,
+			))
+		}
+	}
 
 	importsContent := ""
 	if len(imports) > 0 {

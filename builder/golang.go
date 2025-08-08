@@ -183,7 +183,13 @@ package %s
 				returnStr,
 			))
 			actions = append(actions, fmt.Sprintf(
-				"type Hook%s = func(fn Func%s) error\n",
+				"var fn%s Func%s",
+				name,
+				name,
+			))
+			actions = append(actions, fmt.Sprintf(
+				"func Hook%s (fn Func%s) {\n\tfn%s = fn\n}\n",
+				name,
 				name,
 				name,
 			))

@@ -12,10 +12,16 @@ type CityList struct {
 }
 
 type FuncTest = func() error
-type HookTest = func(fn FuncTest) error
+var fnTest FuncTest
+func HookTest (fn FuncTest) {
+	fnTest = fn
+}
 
 type FuncGetCityList = func(country string) (CityList, error)
-type HookGetCityList = func(fn FuncGetCityList) error
+var fnGetCityList FuncGetCityList
+func HookGetCityList (fn FuncGetCityList) {
+	fnGetCityList = fn
+}
 
 func init() {
 	_rt_system_.RegisterHandler("API.System.City:Test", func(ctx _rt_system_.IContext, response _rt_system_.IResponse, data []byte) *_rt_system_.Return {

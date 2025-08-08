@@ -5,11 +5,12 @@ import (
 	"github.com/ootiny/rt/libs/rt/main/db_geo"
 )
 
+// definition: DB.City@Full
 type Full struct {
 	Id string `json:"id" required:"true"`
 	Name string `json:"name" required:"true"`
-	Geo db_geo.Full `json:"geo"`
-	Active bool `json:"active"`
+	Geo db_geo.Full `json:"geo" required:"false"`
+	Active bool `json:"active" required:"false"`
 }
 
 

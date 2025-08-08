@@ -6,20 +6,27 @@ import (
 	"github.com/ootiny/rt/libs/rt/main/rt"
 )
 
+// definition: API.System.City@CityList
 type CityList struct {
-	From int64 `json:"from" required:"true"`
+	From int64          `json:"from" required:"true"`
 	List []db_city.Full `json:"list" required:"true"`
 }
 
-type FuncTest = func() *rt.Error
+// Action: API.System.City:Test
 var fnTest FuncTest
-func HookTest (fn FuncTest) {
+
+type FuncTest = func() *rt.Error
+
+func HookTest(fn FuncTest) {
 	fnTest = fn
 }
 
-type FuncGetCityList = func(country string) (CityList, *rt.Error)
+// Action: API.System.City:GetCityList
 var fnGetCityList FuncGetCityList
-func HookGetCityList (fn FuncGetCityList) {
+
+type FuncGetCityList = func(country string) (CityList, *rt.Error)
+
+func HookGetCityList(fn FuncGetCityList) {
 	fnGetCityList = fn
 }
 
@@ -50,4 +57,5 @@ func init() {
 		}
 	})
 }
+
 //tag-rt-api-builder-end

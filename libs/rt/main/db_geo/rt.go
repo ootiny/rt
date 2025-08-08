@@ -2,10 +2,11 @@
 package db_geo
 
 
+// definition: DB.Geo@Full
 type Full struct {
-	Id string `json:"id"`
-	Latitude float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
+	Id string `json:"id" required:"false"`
+	Latitude float64 `json:"latitude" required:"false"`
+	Longitude float64 `json:"longitude" required:"false"`
 }
 
 

@@ -111,32 +111,30 @@ package %s
 
 	registerFuncs := []string{}
 
+	// definitions
 	for name, define := range p.apiConfig.Definitions {
 		if len(define.Attributes) > 0 {
 			attributes := []string{}
+			fullDefineName := p.apiConfig.Namespace + "@" + name
 			for _, attribute := range define.Attributes {
 				attrType, pkg := toGolangType(p.output.GoModule, p.location, currentPackage, attribute.Type)
 				if pkg != "" {
 					imports = append(imports, pkg)
 				}
 
-				if attribute.Required {
-					attributes = append(attributes, fmt.Sprintf(
-						"\t%s %s `json:\"%s\" required:\"true\"`",
-						toGolangName(attribute.Name),
-						attrType,
-						attribute.Name,
-					))
-				} else {
-					attributes = append(attributes, fmt.Sprintf(
-						"\t%s %s `json:\"%s\"`",
-						toGolangName(attribute.Name),
-						attrType,
-						attribute.Name,
-					))
-				}
+				attributes = append(attributes, fmt.Sprintf(
+					"\t%s %s `json:\"%s\" required:\"%t\"`",
+					toGolangName(attribute.Name),
+					attrType,
+					attribute.Name,
+					attribute.Required,
+				))
 			}
 
+			defines = append(defines, fmt.Sprintf(
+				"// definition: %s",
+				fullDefineName,
+			))
 			defines = append(defines, fmt.Sprintf(
 				"type %s struct {\n%s\n}\n",
 				name,
@@ -145,6 +143,7 @@ package %s
 		}
 	}
 
+	// actions
 	if len(p.apiConfig.Actions) > 0 {
 		imports = append(imports, fmt.Sprintf(
 			"\t\"%s/%s/rt\"",
@@ -156,6 +155,7 @@ package %s
 			parameters := []string{}
 			structParameters := []string{}
 			callParameters := []string{}
+			fullActionName := p.apiConfig.Namespace + ":" + name
 			for _, parameter := range action.Parameters {
 				typeName, typePkg := toGolangType(p.output.GoModule, p.location, currentPackage, parameter.Type)
 				if typePkg != "" {
@@ -188,15 +188,19 @@ package %s
 			}
 
 			actions = append(actions, fmt.Sprintf(
-				"type Func%s = func(%s) %s",
-				name,
-				strings.Join(parameters, ", "),
-				returnStr,
+				"// Action: %s",
+				fullActionName,
 			))
 			actions = append(actions, fmt.Sprintf(
 				"var fn%s Func%s",
 				name,
 				name,
+			))
+			actions = append(actions, fmt.Sprintf(
+				"type Func%s = func(%s) %s",
+				name,
+				strings.Join(parameters, ", "),
+				returnStr,
 			))
 			actions = append(actions, fmt.Sprintf(
 				"func Hook%s (fn Func%s) {\n\tfn%s = fn\n}\n",
@@ -205,7 +209,7 @@ package %s
 				name,
 			))
 			funcBody := ""
-			fullActionName := p.apiConfig.Namespace + ":" + name
+
 			if len(structParameters) > 0 {
 				funcBody += fmt.Sprintf("\n\t\tvar v struct {\n\t%s\n\t\t}", strings.Join(structParameters, "\n"))
 				funcBody += "\n\t\tif err := rt.JsonUnmarshal(data, &v); err != nil {\n\t\t\treturn nil\n\t\t}\n"

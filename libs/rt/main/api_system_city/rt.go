@@ -2,12 +2,12 @@
 package api_system_city
 
 import (
-	"github.com/ootiny/rt/libs/rt/main/db_city"
 	"github.com/ootiny/rt/libs/rt/main/_rt_system_"
+	"github.com/ootiny/rt/libs/rt/main/db_city"
 )
 
 type CityList struct {
-	From int64 `json:"from" required:"true"`
+	From int64          `json:"from" required:"true"`
 	List []db_city.Full `json:"list" required:"true"`
 }
 
@@ -19,4 +19,5 @@ func init() {
 		return nil
 	})
 }
+
 //tag-rt-api-builder-end

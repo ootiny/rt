@@ -1,4 +1,4 @@
-package _rt_system_
+package rt
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 type Context struct {
 	action string
 	r      *http.Request
+	ContextBase
 }
 
 func (p *Context) Action() string {
@@ -46,7 +47,7 @@ func NewHttpServer(addr string, certFile string, keyFile string) IServer {
 
 		if !ok {
 			ret = &Return{
-				Code:    ErrAPIActionNotFound,
+				Code:    ErrActionNotFound,
 				Message: fmt.Sprintf("action %s not found", action),
 			}
 		} else {
@@ -55,7 +56,7 @@ func NewHttpServer(addr string, certFile string, keyFile string) IServer {
 			if len(data) == 0 {
 				if body, err := io.ReadAll(r.Body); err != nil {
 					ret = &Return{
-						Code:    ErrAPIReadData,
+						Code:    ErrReadData,
 						Message: fmt.Sprintf("read data error: %s", err.Error()),
 					}
 				} else {

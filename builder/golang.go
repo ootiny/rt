@@ -147,13 +147,15 @@ package %s
 
 	if len(p.apiConfig.Actions) > 0 {
 		imports = append(imports, fmt.Sprintf(
-			"\t\"%s/%s/_rt_system_\"",
+			"\t\"%s/%s/rt\"",
 			p.output.GoModule,
 			p.location,
 		))
 
 		for name, action := range p.apiConfig.Actions {
 			parameters := []string{}
+			structParameters := []string{}
+			callParameters := []string{}
 			for _, parameter := range action.Parameters {
 				typeName, typePkg := toGolangType(p.output.GoModule, p.location, currentPackage, parameter.Type)
 				if typePkg != "" {
@@ -164,6 +166,15 @@ package %s
 					parameter.Name,
 					typeName,
 				))
+				goParameterName := toGolangName(parameter.Name)
+				structParameters = append(structParameters, fmt.Sprintf(
+					"\t\t%s %s `json:\"%s\" required:\"%t\"`",
+					goParameterName,
+					typeName,
+					parameter.Name,
+					parameter.Required,
+				))
+				callParameters = append(callParameters, "v."+goParameterName)
 			}
 
 			returnType, typePkg := toGolangType(p.output.GoModule, p.location, currentPackage, action.Return.Type)
@@ -171,9 +182,9 @@ package %s
 				imports = append(imports, typePkg)
 			}
 
-			returnStr := "error"
+			returnStr := "*rt.Error"
 			if returnType != "" {
-				returnStr = fmt.Sprintf("(%s, error)", returnType)
+				returnStr = fmt.Sprintf("(%s, *rt.Error)", returnType)
 			}
 
 			actions = append(actions, fmt.Sprintf(
@@ -193,9 +204,26 @@ package %s
 				name,
 				name,
 			))
+			funcBody := ""
+			fullActionName := p.apiConfig.Namespace + ":" + name
+			if len(structParameters) > 0 {
+				funcBody += fmt.Sprintf("\n\t\tvar v struct {\n\t%s\n\t\t}", strings.Join(structParameters, "\n"))
+				funcBody += "\n\t\tif err := rt.JsonUnmarshal(data, &v); err != nil {\n\t\t\treturn nil\n\t\t}\n"
+			}
+
+			funcBody += fmt.Sprintf("\n\t\tif fn%s == nil {\n\t\t\treturn &rt.Return{Code: rt.ErrActionNotImplemented, Message: \"%s is not implemented\"}\n\t\t}", name, fullActionName)
+			if returnType == "" {
+				funcBody += fmt.Sprintf(" else if err := fn%s(%s); err != nil {\n\t\t\treturn &rt.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}", name, strings.Join(callParameters, ", "))
+				funcBody += " else {\n\t\t\treturn &rt.Return{}\n\t\t}"
+			} else {
+				funcBody += fmt.Sprintf(" else if result, err := fn%s(%s); err != nil {\n\t\t\treturn &rt.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}", name, strings.Join(callParameters, ", "))
+				funcBody += " else {\n\t\t\treturn &rt.Return{Data: result}\n\t\t}"
+			}
+
 			registerFuncs = append(registerFuncs, fmt.Sprintf(
-				"\t_rt_system_.RegisterHandler(\"%s\", func(ctx _rt_system_.IContext, response _rt_system_.IResponse, data []byte) *_rt_system_.Return {\n\t\treturn nil\n\t})",
-				p.apiConfig.Namespace+":"+name,
+				"\trt.RegisterHandler(\"%s\", func(ctx rt.IContext, response rt.IResponse, data []byte) *rt.Return {%s\n\t})",
+				fullActionName,
+				funcBody,
 			))
 		}
 	}

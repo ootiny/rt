@@ -326,12 +326,12 @@ func Output() error {
 		if output.HttpEngine != "" {
 			engineFile := fmt.Sprintf("%s.%s", engineMap[output.HttpEngine], languageTailMap[output.Language])
 			commonFile := fmt.Sprintf("common.%s", languageTailMap[output.Language])
-			systemDir := filepath.Join(output.Dir, MainLocation, "_rt_system_")
+			systemDir := filepath.Join(output.Dir, MainLocation, "rt")
 			assetEgineFile := fmt.Sprintf(
 				"assets/%s/%s/%s/%s",
 				output.Language,
 				output.Kind,
-				"_rt_system_",
+				"rt",
 				engineFile,
 			)
 
@@ -339,7 +339,7 @@ func Output() error {
 				"assets/%s/%s/%s/%s",
 				output.Language,
 				output.Kind,
-				"_rt_system_",
+				"rt",
 				commonFile,
 			)
 

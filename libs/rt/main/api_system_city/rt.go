@@ -3,7 +3,7 @@ package api_system_city
 
 import (
 	"github.com/ootiny/rt/libs/rt/main/db_city"
-	"github.com/ootiny/rt/libs/rt/main/_rt_system_"
+	"github.com/ootiny/rt/libs/rt/main/rt"
 )
 
 type CityList struct {
@@ -11,24 +11,43 @@ type CityList struct {
 	List []db_city.Full `json:"list" required:"true"`
 }
 
-type FuncTest = func() error
+type FuncTest = func() *rt.Error
 var fnTest FuncTest
 func HookTest (fn FuncTest) {
 	fnTest = fn
 }
 
-type FuncGetCityList = func(country string) (CityList, error)
+type FuncGetCityList = func(country string) (CityList, *rt.Error)
 var fnGetCityList FuncGetCityList
 func HookGetCityList (fn FuncGetCityList) {
 	fnGetCityList = fn
 }
 
 func init() {
-	_rt_system_.RegisterHandler("API.System.City:Test", func(ctx _rt_system_.IContext, response _rt_system_.IResponse, data []byte) *_rt_system_.Return {
-		return nil
+	rt.RegisterHandler("API.System.City:Test", func(ctx rt.IContext, response rt.IResponse, data []byte) *rt.Return {
+		if fnTest == nil {
+			return &rt.Return{Code: rt.ErrActionNotImplemented, Message: "API.System.City:Test is not implemented"}
+		} else if err := fnTest(); err != nil {
+			return &rt.Return{Code: err.GetCode(), Message: err.GetMessage()}
+		} else {
+			return &rt.Return{}
+		}
 	})
-	_rt_system_.RegisterHandler("API.System.City:GetCityList", func(ctx _rt_system_.IContext, response _rt_system_.IResponse, data []byte) *_rt_system_.Return {
-		return nil
+	rt.RegisterHandler("API.System.City:GetCityList", func(ctx rt.IContext, response rt.IResponse, data []byte) *rt.Return {
+		var v struct {
+			Country string `json:"country" required:"true"`
+		}
+		if err := rt.JsonUnmarshal(data, &v); err != nil {
+			return nil
+		}
+
+		if fnGetCityList == nil {
+			return &rt.Return{Code: rt.ErrActionNotImplemented, Message: "API.System.City:GetCityList is not implemented"}
+		} else if result, err := fnGetCityList(v.Country); err != nil {
+			return &rt.Return{Code: err.GetCode(), Message: err.GetMessage()}
+		} else {
+			return &rt.Return{Data: result}
+		}
 	})
 }
 //tag-rt-api-builder-end

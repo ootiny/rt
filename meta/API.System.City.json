@@ -22,6 +22,10 @@
     }
   },
   "actions": {
+    "Test": {
+      "description": "Test",
+      "method": "GET"
+    },
     "GetCityList": {
       "description": "Get city list",
       "method": "GET",

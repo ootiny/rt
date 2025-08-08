@@ -2,22 +2,27 @@
 package api_system_city
 
 import (
-	"github.com/ootiny/rt/libs/rt/main/_rt_system_"
 	"github.com/ootiny/rt/libs/rt/main/db_city"
+	"github.com/ootiny/rt/libs/rt/main/_rt_system_"
 )
 
 type CityList struct {
-	From int64          `json:"from" required:"true"`
+	From int64 `json:"from" required:"true"`
 	List []db_city.Full `json:"list" required:"true"`
 }
+
+type FuncTest = func() error
+type HookTest = func(fn FuncTest) error
 
 type FuncGetCityList = func(country string) (CityList, error)
 type HookGetCityList = func(fn FuncGetCityList) error
 
 func init() {
-	_rt_system_.RegisterHandler("API.System.City:GetCityList", func(ctx *_rt_system_.Context) *_rt_system_.Return {
+	_rt_system_.RegisterHandler("API.System.City:Test", func(ctx _rt_system_.IContext, response _rt_system_.IResponse, data []byte) *_rt_system_.Return {
+		return nil
+	})
+	_rt_system_.RegisterHandler("API.System.City:GetCityList", func(ctx _rt_system_.IContext, response _rt_system_.IResponse, data []byte) *_rt_system_.Return {
 		return nil
 	})
 }
-
 //tag-rt-api-builder-end

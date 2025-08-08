@@ -170,16 +170,17 @@ package %s
 			if typePkg != "" {
 				imports = append(imports, typePkg)
 			}
-			returns := []string{
-				returnType,
-				"error",
+
+			returnStr := "error"
+			if returnType != "" {
+				returnStr = fmt.Sprintf("(%s, error)", returnType)
 			}
 
 			actions = append(actions, fmt.Sprintf(
-				"type Func%s = func(%s) (%s)",
+				"type Func%s = func(%s) %s",
 				name,
 				strings.Join(parameters, ", "),
-				strings.Join(returns, ", "),
+				returnStr,
 			))
 			actions = append(actions, fmt.Sprintf(
 				"type Hook%s = func(fn Func%s) error\n",
@@ -187,7 +188,7 @@ package %s
 				name,
 			))
 			registerFuncs = append(registerFuncs, fmt.Sprintf(
-				"\t_rt_system_.RegisterHandler(\"%s\", func(ctx *_rt_system_.Context) *_rt_system_.Return {\n\t\treturn nil\n\t})",
+				"\t_rt_system_.RegisterHandler(\"%s\", func(ctx _rt_system_.IContext, response _rt_system_.IResponse, data []byte) *_rt_system_.Return {\n\t\treturn nil\n\t})",
 				p.apiConfig.Namespace+":"+name,
 			))
 		}

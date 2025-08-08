@@ -36,7 +36,7 @@ func (p *Response) WriteJson(data []byte) (int, error) {
 	return p.w.Write(data)
 }
 
-func NewHttpServer(addr string, certFile string, keyFile string) *HttpServer {
+func NewHttpServer(addr string, certFile string, keyFile string) IServer {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +83,7 @@ func NewHttpServer(addr string, certFile string, keyFile string) *HttpServer {
 		}
 	})
 
-	return &HttpServer{
+	return &Server{
 		addr:     addr,
 		certFile: certFile,
 		keyFile:  keyFile,

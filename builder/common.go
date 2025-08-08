@@ -325,8 +325,9 @@ func Output() error {
 	for _, output := range rtConfig.Outputs {
 		if output.HttpEngine != "" {
 			engineFile := fmt.Sprintf("%s.%s", engineMap[output.HttpEngine], languageTailMap[output.Language])
+			commonFile := fmt.Sprintf("common.%s", languageTailMap[output.Language])
 			systemDir := filepath.Join(output.Dir, MainLocation, "_rt_system_")
-			assetsFile := fmt.Sprintf(
+			assetEgineFile := fmt.Sprintf(
 				"assets/%s/%s/%s/%s",
 				output.Language,
 				output.Kind,
@@ -334,13 +335,25 @@ func Output() error {
 				engineFile,
 			)
 
+			assetCommonFile := fmt.Sprintf(
+				"assets/%s/%s/%s/%s",
+				output.Language,
+				output.Kind,
+				"_rt_system_",
+				commonFile,
+			)
+
 			if err := os.RemoveAll(systemDir); err != nil {
 				log.Fatalf("failed to remove system dir: %v", err)
 			} else if err := os.MkdirAll(systemDir, 0755); err != nil {
 				log.Fatalf("failed to create system dir: %v", err)
-			} else if content, err := assets.ReadFile(assetsFile); err != nil {
+			} else if engineContent, err := assets.ReadFile(assetEgineFile); err != nil {
 				log.Fatalf("failed to read assets file: %v", err)
-			} else if err := os.WriteFile(filepath.Join(systemDir, engineFile), content, 0644); err != nil {
+			} else if err := os.WriteFile(filepath.Join(systemDir, engineFile), engineContent, 0644); err != nil {
+				log.Fatalf("failed to write assets file: %v", err)
+			} else if commonContent, err := assets.ReadFile(assetCommonFile); err != nil {
+				log.Fatalf("failed to read assets file: %v", err)
+			} else if err := os.WriteFile(filepath.Join(systemDir, commonFile), commonContent, 0644); err != nil {
 				log.Fatalf("failed to write assets file: %v", err)
 			}
 		}

@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-var gMap = map[string]func(ctx *Context) Return{}
+var gMap = map[string]func(ctx *Context) *Return{}
 
 const ErrAPIActionNotFound = 1001
 const ErrAPIReadData = 1002
@@ -53,11 +53,11 @@ func (p *Context) WriteJson(data []byte) (int, error) {
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {
 	action := r.URL.Query().Get("a")
-	ret := Return{}
+	ret := (*Return)(nil)
 	fn, ok := gMap[action]
 
 	if !ok {
-		ret = Return{
+		ret = &Return{
 			Code:    ErrAPIActionNotFound,
 			Message: fmt.Sprintf("action %s not found", action),
 		}
@@ -66,7 +66,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 		if len(data) == 0 {
 			if body, err := io.ReadAll(r.Body); err != nil {
-				ret = Return{
+				ret = &Return{
 					Code:    ErrAPIReadData,
 					Message: fmt.Sprintf("read data error: %s", err.Error()),
 				}
@@ -137,6 +137,6 @@ func ListenAndServeTLSWithCert(addr string, certBytes []byte, keyBytes []byte) e
 	return server.ListenAndServeTLS("", "")
 }
 
-func RegisterHandler(action string, handler func(ctx *Context) Return) {
+func RegisterHandler(action string, handler func(ctx *Context) *Return) {
 	gMap[action] = handler
 }

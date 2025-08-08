@@ -4,7 +4,6 @@ package api_system_city
 import (
 	"github.com/ootiny/rt/libs/rt/main/db_city"
 	"github.com/ootiny/rt/libs/rt/main/_rt_system_"
-	"github.com/ootiny/rt/libs/rt/main/api_system_city"
 )
 
 type CityList struct {
@@ -12,8 +11,12 @@ type CityList struct {
 	List []db_city.Full `json:"list" required:"true"`
 }
 
-type FuncGetCityList = func(country string) (api_system_city.CityList, error)
+type FuncGetCityList = func(country string) (CityList, error)
 type HookGetCityList = func(fn FuncGetCityList) error
 
-
+func init() {
+	_rt_system_.RegisterHandler("API.System.City:GetCityList", func(ctx *_rt_system_.Context) *_rt_system_.Return {
+		return nil
+	})
+}
 //tag-rt-api-builder-end

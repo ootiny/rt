@@ -2,7 +2,7 @@
 package db_city
 
 import (
-	"github.com/ootiny/rt/libs/rt/main/db_geo"
+	"github.com/ootiny/rt/runtime/db_geo"
 )
 
 // definition: DB.City@Full

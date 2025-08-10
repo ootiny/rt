@@ -198,21 +198,25 @@ package %s
 
 			if len(structParameters) > 0 {
 				funcBody += fmt.Sprintf("\n\t\tvar v struct {\n\t%s\n\t\t}", strings.Join(structParameters, "\n"))
-				funcBody += "\n\t\tif err := rt.JsonUnmarshal(data, &v); err != nil {\n\t\t\treturn nil\n\t\t}\n"
+				funcBody += fmt.Sprintf("\n\t\tif err := %s.JsonUnmarshal(data, &v); err != nil {\n\t\t\treturn nil\n\t\t}\n", p.output.GoPackage)
 			}
 
-			funcBody += fmt.Sprintf("\n\t\tif fn%s == nil {\n\t\t\treturn &rt.Return{Code: rt.ErrActionNotImplemented, Message: \"%s is not implemented\"}\n\t\t}", name, fullActionName)
+			funcBody += fmt.Sprintf("\n\t\tif fn%s == nil {\n\t\t\treturn &%s.Return{Code: %s.ErrActionNotImplemented, Message: \"%s is not implemented\"}\n\t\t}", name, p.output.GoPackage, p.output.GoPackage, fullActionName)
 			if returnType == "" {
-				funcBody += fmt.Sprintf(" else if err := fn%s(%s); err != nil {\n\t\t\treturn &rt.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}", name, strings.Join(callParameters, ", "))
-				funcBody += " else {\n\t\t\treturn &rt.Return{}\n\t\t}"
+				funcBody += fmt.Sprintf(" else if err := fn%s(%s); err != nil {\n\t\t\treturn &%s.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}", name, strings.Join(callParameters, ", "), p.output.GoPackage)
+				funcBody += fmt.Sprintf(" else {\n\t\t\treturn &%s.Return{}\n\t\t}", p.output.GoPackage)
 			} else {
-				funcBody += fmt.Sprintf(" else if result, err := fn%s(%s); err != nil {\n\t\t\treturn &rt.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}", name, strings.Join(callParameters, ", "))
-				funcBody += " else {\n\t\t\treturn &rt.Return{Data: result}\n\t\t}"
+				funcBody += fmt.Sprintf(" else if result, err := fn%s(%s); err != nil {\n\t\t\treturn &%s.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}", name, strings.Join(callParameters, ", "), p.output.GoPackage)
+				funcBody += fmt.Sprintf(" else {\n\t\t\treturn &%s.Return{Data: result}\n\t\t}", p.output.GoPackage)
 			}
 
 			registerFuncs = append(registerFuncs, fmt.Sprintf(
-				"\trt.RegisterHandler(\"%s\", func(ctx rt.IContext, response rt.IResponse, data []byte) *rt.Return {%s\n\t})",
+				"\t%s.RegisterHandler(\"%s\", func(ctx %s.IContext, response %s.IResponse, data []byte) *%s.Return {%s\n\t})",
+				p.output.GoPackage,
 				fullActionName,
+				p.output.GoPackage,
+				p.output.GoPackage,
+				p.output.GoPackage,
 				funcBody,
 			))
 		}

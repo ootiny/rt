@@ -238,12 +238,21 @@ package %s
 				funcBody += fmt.Sprintf("\n\t\tif err := %s.JsonUnmarshal(data, &v); err != nil {\n\t\t\treturn nil\n\t\t}\n", p.output.GoPackage)
 			}
 
-			funcBody += fmt.Sprintf("\n\t\tif fn%s == nil {\n\t\t\treturn &%s.Return{Code: %s.ErrActionNotImplemented, Message: \"%s is not implemented\"}\n\t\t}", name, p.output.GoPackage, p.output.GoPackage, fullActionName)
+			funcBody += fmt.Sprintf(
+				"\n\t\tif fn%s == nil {\n\t\t\treturn &%s.Return{Code: %s.ErrActionNotImplemented, Message: \"%s is not implemented\"}\n\t\t}",
+				name, p.output.GoPackage, p.output.GoPackage, fullActionName,
+			)
 			if returnType == "" {
-				funcBody += fmt.Sprintf(" else if err := fn%s(%s); err != nil {\n\t\t\treturn &%s.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}", name, strings.Join(callParameters, ", "), p.output.GoPackage)
+				funcBody += fmt.Sprintf(
+					" else if err := fn%s(%s); err != nil {\n\t\t\treturn &%s.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}",
+					name, strings.Join(callParameters, ", "), p.output.GoPackage,
+				)
 				funcBody += fmt.Sprintf(" else {\n\t\t\treturn &%s.Return{}\n\t\t}", p.output.GoPackage)
 			} else {
-				funcBody += fmt.Sprintf(" else if result, err := fn%s(%s); err != nil {\n\t\t\treturn &%s.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}", name, strings.Join(callParameters, ", "), p.output.GoPackage)
+				funcBody += fmt.Sprintf(
+					" else if result, err := fn%s(%s); err != nil {\n\t\t\treturn &%s.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}",
+					name, strings.Join(callParameters, ", "), p.output.GoPackage,
+				)
 				funcBody += fmt.Sprintf(" else {\n\t\t\treturn &%s.Return{Data: result}\n\t\t}", p.output.GoPackage)
 			}
 

@@ -7,37 +7,37 @@ import (
 	"net/http"
 )
 
-type Context struct {
+type GoContext struct {
 	action string
 	r      *http.Request
 	ContextBase
 }
 
-func (p *Context) Action() string {
+func (p *GoContext) Action() string {
 	return p.action
 }
 
-func (p *Context) Method() string {
+func (p *GoContext) Method() string {
 	return p.r.Method
 }
 
-func (p *Context) Cookie(name string) (*http.Cookie, error) {
+func (p *GoContext) Cookie(name string) (*http.Cookie, error) {
 	return p.r.Cookie(name)
 }
 
-func (p *Context) Header(name string) string {
+func (p *GoContext) Header(name string) string {
 	return p.r.Header.Get(name)
 }
 
-type Response struct {
+type GoResponse struct {
 	w http.ResponseWriter
 }
 
-func (p *Response) WriteJson(data []byte) (int, error) {
+func (p *GoResponse) WriteJson(data []byte) (int, error) {
 	return p.w.Write(data)
 }
 
-func NewHttpServer(addr string, certFile string, keyFile string) IServer {
+func NewHttpServer(addr string, certFile string, keyFile string) *Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +65,7 @@ func NewHttpServer(addr string, certFile string, keyFile string) IServer {
 			}
 
 			if ret.Code == 0 {
-				ret = fn(&Context{action: action, r: r}, &Response{w: w}, data)
+				ret = fn(&GoContext{action: action, r: r}, &GoResponse{w: w}, data)
 			}
 		}
 

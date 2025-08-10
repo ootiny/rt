@@ -205,9 +205,9 @@ package %s
 				imports = append(imports, typePkg)
 			}
 
-			returnStr := fmt.Sprintf("*%s.Error", p.output.GoPackage)
+			returnStr := fmt.Sprintf("%s.Error", p.output.GoPackage)
 			if returnType != "" {
-				returnStr = fmt.Sprintf("(%s, *%s.Error)", returnType, p.output.GoPackage)
+				returnStr = fmt.Sprintf("(%s, %s.Error)", returnType, p.output.GoPackage)
 			}
 
 			actions = append(actions, fmt.Sprintf(
@@ -244,20 +244,20 @@ package %s
 			)
 			if returnType == "" {
 				funcBody += fmt.Sprintf(
-					" else if err := fn%s(%s); err != nil {\n\t\t\treturn &%s.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}",
+					" else if err := fn%s(%s); err != nil {\n\t\t\treturn &%s.Return{Code: err.GetCode(), Message: err.Error()}\n\t\t}",
 					name, strings.Join(callParameters, ", "), p.output.GoPackage,
 				)
 				funcBody += fmt.Sprintf(" else {\n\t\t\treturn &%s.Return{}\n\t\t}", p.output.GoPackage)
 			} else {
 				funcBody += fmt.Sprintf(
-					" else if result, err := fn%s(%s); err != nil {\n\t\t\treturn &%s.Return{Code: err.GetCode(), Message: err.GetMessage()}\n\t\t}",
+					" else if result, err := fn%s(%s); err != nil {\n\t\t\treturn &%s.Return{Code: err.GetCode(), Message: err.Error()}\n\t\t}",
 					name, strings.Join(callParameters, ", "), p.output.GoPackage,
 				)
 				funcBody += fmt.Sprintf(" else {\n\t\t\treturn &%s.Return{Data: result}\n\t\t}", p.output.GoPackage)
 			}
 
 			registerFuncs = append(registerFuncs, fmt.Sprintf(
-				"\t%s.RegisterHandler(\"%s\", func(ctx %s.IContext, response %s.IResponse, data []byte) *%s.Return {%s\n\t})",
+				"\t%s.RegisterHandler(\"%s\", func(ctx %s.Context, response %s.Response, data []byte) *%s.Return {%s\n\t})",
 				p.output.GoPackage,
 				fullActionName,
 				p.output.GoPackage,

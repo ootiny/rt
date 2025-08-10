@@ -3,7 +3,7 @@ package api_system_city
 
 import (
 	"github.com/ootiny/rt/runtime/db_city"
-	"github.com/ootiny/rt/runtime/rt"
+	"github.com/ootiny/rt/runtime"
 )
 
 // definition: API.System.City@CityList
@@ -12,30 +12,21 @@ type CityList struct {
 	List []db_city.Full `json:"list" required:"true"`
 }
 
-// Action: API.System.City:Test
-var fnTest FuncTest
-type FuncTest = func() *rt.Error
-func HookTest (fn FuncTest) {
-	fnTest = fn
-}
-
 // Action: API.System.City:GetCityList
 var fnGetCityList FuncGetCityList
-type FuncGetCityList = func(country string) (CityList, *rt.Error)
+type FuncGetCityList = func(country string) (CityList, *runtime.Error)
 func HookGetCityList (fn FuncGetCityList) {
 	fnGetCityList = fn
 }
 
+// Action: API.System.City:Test
+var fnTest FuncTest
+type FuncTest = func() *runtime.Error
+func HookTest (fn FuncTest) {
+	fnTest = fn
+}
+
 func init() {
-	rt.RegisterHandler("API.System.City:Test", func(ctx rt.IContext, response rt.IResponse, data []byte) *rt.Return {
-		if fnTest == nil {
-			return &rt.Return{Code: rt.ErrActionNotImplemented, Message: "API.System.City:Test is not implemented"}
-		} else if err := fnTest(); err != nil {
-			return &rt.Return{Code: err.GetCode(), Message: err.GetMessage()}
-		} else {
-			return &rt.Return{}
-		}
-	})
 	rt.RegisterHandler("API.System.City:GetCityList", func(ctx rt.IContext, response rt.IResponse, data []byte) *rt.Return {
 		var v struct {
 			Country string `json:"country" required:"true"`
@@ -50,6 +41,15 @@ func init() {
 			return &rt.Return{Code: err.GetCode(), Message: err.GetMessage()}
 		} else {
 			return &rt.Return{Data: result}
+		}
+	})
+	rt.RegisterHandler("API.System.City:Test", func(ctx rt.IContext, response rt.IResponse, data []byte) *rt.Return {
+		if fnTest == nil {
+			return &rt.Return{Code: rt.ErrActionNotImplemented, Message: "API.System.City:Test is not implemented"}
+		} else if err := fnTest(); err != nil {
+			return &rt.Return{Code: err.GetCode(), Message: err.GetMessage()}
+		} else {
+			return &rt.Return{}
 		}
 	})
 }

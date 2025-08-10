@@ -135,7 +135,7 @@ package %s
 
 	// actions
 	if len(p.apiConfig.Actions) > 0 {
-		imports = append(imports, fmt.Sprintf("\t\"%s/rt\"", p.output.GoModule))
+		imports = append(imports, fmt.Sprintf("\t\"%s\"", p.output.GoModule))
 
 		for name, action := range p.apiConfig.Actions {
 			parameters := []string{}
@@ -168,9 +168,9 @@ package %s
 				imports = append(imports, typePkg)
 			}
 
-			returnStr := "*rt.Error"
+			returnStr := fmt.Sprintf("*%s.Error", p.output.GoPackage)
 			if returnType != "" {
-				returnStr = fmt.Sprintf("(%s, *rt.Error)", returnType)
+				returnStr = fmt.Sprintf("(%s, *%s.Error)", returnType, p.output.GoPackage)
 			}
 
 			actions = append(actions, fmt.Sprintf(

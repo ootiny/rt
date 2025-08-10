@@ -1,4 +1,4 @@
-package rt
+package _rt_package_name_
 
 import (
 	"encoding/json"

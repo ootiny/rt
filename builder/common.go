@@ -51,6 +51,7 @@ type RTOutputConfig struct {
 	Language   string `json:"language" required:"true"`
 	Dir        string `json:"dir" required:"true"`
 	GoModule   string `json:"goModule"`
+	GoPackage  string `json:"goPackage"`
 	HttpEngine string `json:"httpEngine"`
 }
 
@@ -205,6 +206,11 @@ func LoadRtConfig() (RTConfig, error) {
 		if !filepath.IsAbs(config.Outputs[i].Dir) {
 			config.Outputs[i].Dir = filepath.Join(projectDir, config.Outputs[i].Dir)
 		}
+
+		if config.Outputs[i].GoModule != "" && config.Outputs[i].GoPackage == "" {
+			goModuleArr := strings.Split(config.Outputs[i].GoModule, "/")
+			config.Outputs[i].GoPackage = goModuleArr[len(goModuleArr)-1]
+		}
 	}
 
 	config.__filepath__ = configPath
@@ -324,22 +330,12 @@ func Output() error {
 		if output.HttpEngine != "" {
 			engineFile := fmt.Sprintf("%s.%s", engineMap[output.HttpEngine], languageTailMap[output.Language])
 			commonFile := fmt.Sprintf("common.%s", languageTailMap[output.Language])
-			systemDir := filepath.Join(output.Dir, "rt")
-			assetEgineFile := fmt.Sprintf(
-				"assets/%s/%s/%s/%s",
-				output.Language,
-				output.Kind,
-				"rt",
-				engineFile,
-			)
+			systemDir := filepath.Join(output.Dir)
+			assetEgineFile := fmt.Sprintf("assets/%s/%s", output.Language, engineFile)
+			assetCommonFile := fmt.Sprintf("assets/%s/%s", output.Language, commonFile)
 
-			assetCommonFile := fmt.Sprintf(
-				"assets/%s/%s/%s/%s",
-				output.Language,
-				output.Kind,
-				"rt",
-				commonFile,
-			)
+			replaceName := ""
+			replaceContent := ""
 
 			if err := os.RemoveAll(systemDir); err != nil {
 				log.Fatalf("failed to remove system dir: %v", err)
@@ -347,10 +343,22 @@ func Output() error {
 				log.Fatalf("failed to create system dir: %v", err)
 			} else if engineContent, err := assets.ReadFile(assetEgineFile); err != nil {
 				log.Fatalf("failed to read assets file: %v", err)
-			} else if err := os.WriteFile(filepath.Join(systemDir, engineFile), engineContent, 0644); err != nil {
-				log.Fatalf("failed to write assets file: %v", err)
 			} else if commonContent, err := assets.ReadFile(assetCommonFile); err != nil {
 				log.Fatalf("failed to read assets file: %v", err)
+			} else if err := func() error {
+				// replace package name or namespace if needed
+				switch output.Language {
+				case "go":
+					replaceName = "package _rt_package_name_"
+					replaceContent = fmt.Sprintf("package %s", output.GoPackage)
+					engineContent = []byte(strings.ReplaceAll(string(engineContent), replaceName, replaceContent))
+					commonContent = []byte(strings.ReplaceAll(string(commonContent), replaceName, replaceContent))
+				}
+				return nil
+			}(); err != nil {
+				log.Fatalf("failed to process assets content: %v", err)
+			} else if err := os.WriteFile(filepath.Join(systemDir, "engine."+languageTailMap[output.Language]), engineContent, 0644); err != nil {
+				log.Fatalf("failed to write assets file: %v", err)
 			} else if err := os.WriteFile(filepath.Join(systemDir, commonFile), commonContent, 0644); err != nil {
 				log.Fatalf("failed to write assets file: %v", err)
 			}

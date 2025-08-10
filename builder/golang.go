@@ -77,7 +77,11 @@ type GoBuilder struct {
 	BuildContext
 }
 
-func (p *GoBuilder) Build() error {
+func (p *GoBuilder) BuildClient() error {
+	return fmt.Errorf("not implemented")
+}
+
+func (p *GoBuilder) BuildServer() error {
 	if p.apiConfig.Namespace == "" {
 		return fmt.Errorf("namespace is required")
 	}
@@ -247,5 +251,5 @@ package %s
 		BuilderEndTag,
 	)
 
-	return os.WriteFile(filepath.Join(outDir, "rt.go"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(outDir, "gen.go"), []byte(content), 0644)
 }

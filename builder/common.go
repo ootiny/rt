@@ -37,7 +37,8 @@ var languageTailMap = map[string]string{
 }
 
 type IBuilder interface {
-	Build() error
+	BuildServer() error
+	BuildClient() error
 }
 
 type BuildContext struct {
@@ -434,5 +435,11 @@ func OutputFile(
 		return fmt.Errorf("unsupported language: %s", context.output.Language)
 	}
 
-	return builder.Build()
+	if context.output.Kind == "server" {
+		return builder.BuildServer()
+	} else if context.output.Kind == "client" {
+		return builder.BuildClient()
+	} else {
+		return fmt.Errorf("unsupported kind: %s", context.output.Kind)
+	}
 }

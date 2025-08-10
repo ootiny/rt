@@ -100,7 +100,7 @@ func GoPrepare(output RTOutputConfig) error {
 			return nil
 		}
 	case "client":
-		return nil
+		return fmt.Errorf("not implemented")
 	default:
 		return fmt.Errorf("unknown output kind: %s", output.Kind)
 	}

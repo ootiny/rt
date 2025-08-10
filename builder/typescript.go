@@ -3,7 +3,14 @@ package builder
 import "fmt"
 
 func TypescriptPrepare(output RTOutputConfig) error {
-	return nil
+	switch output.Kind {
+	case "server":
+		return fmt.Errorf("not implemented")
+	case "client":
+		return nil
+	default:
+		return fmt.Errorf("unknown output kind: %s", output.Kind)
+	}
 }
 
 type TypescriptBuilder struct {

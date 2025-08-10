@@ -435,11 +435,12 @@ func OutputFile(
 		return fmt.Errorf("unsupported language: %s", context.output.Language)
 	}
 
-	if context.output.Kind == "server" {
+	switch context.output.Kind {
+	case "server":
 		return builder.BuildServer()
-	} else if context.output.Kind == "client" {
+	case "client":
 		return builder.BuildClient()
-	} else {
+	default:
 		return fmt.Errorf("unsupported kind: %s", context.output.Kind)
 	}
 }

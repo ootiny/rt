@@ -4,7 +4,7 @@
     {
       "kind": "client",
       "language": "typescript",
-      "dir": "${ProjectDir}/web/gapi"
+      "dir": "${ProjectDir}/web/api"
     },
     {
       "kind": "server",

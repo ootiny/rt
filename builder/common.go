@@ -344,41 +344,17 @@ func Output() error {
 	log.Printf("rt: config file: %s\n", rtConfig.GetFilePath())
 
 	for _, output := range rtConfig.Outputs {
-		if output.HttpEngine != "" {
-			engineFile := fmt.Sprintf("%s.%s", engineMap[output.HttpEngine], languageTailMap[output.Language])
-			commonFile := fmt.Sprintf("common.%s", languageTailMap[output.Language])
-			systemDir := filepath.Join(output.Dir)
-			assetEgineFile := fmt.Sprintf("assets/%s/%s", output.Language, engineFile)
-			assetCommonFile := fmt.Sprintf("assets/%s/%s", output.Language, commonFile)
-
-			replaceName := ""
-			replaceContent := ""
-
-			if err := os.RemoveAll(systemDir); err != nil {
-				log.Fatalf("failed to remove system dir: %v", err)
-			} else if err := os.MkdirAll(systemDir, 0755); err != nil {
-				log.Fatalf("failed to create system dir: %v", err)
-			} else if engineContent, err := assets.ReadFile(assetEgineFile); err != nil {
-				log.Fatalf("failed to read assets file: %v", err)
-			} else if commonContent, err := assets.ReadFile(assetCommonFile); err != nil {
-				log.Fatalf("failed to read assets file: %v", err)
-			} else if err := func() error {
-				// replace package name or namespace if needed
-				switch output.Language {
-				case "go":
-					replaceName = "package _rt_package_name_"
-					replaceContent = fmt.Sprintf("package %s", output.GoPackage)
-					engineContent = []byte(strings.ReplaceAll(string(engineContent), replaceName, replaceContent))
-					commonContent = []byte(strings.ReplaceAll(string(commonContent), replaceName, replaceContent))
-				}
-				return nil
-			}(); err != nil {
-				log.Fatalf("failed to process assets content: %v", err)
-			} else if err := os.WriteFile(filepath.Join(systemDir, "engine."+languageTailMap[output.Language]), engineContent, 0644); err != nil {
-				log.Fatalf("failed to write assets file: %v", err)
-			} else if err := os.WriteFile(filepath.Join(systemDir, commonFile), commonContent, 0644); err != nil {
-				log.Fatalf("failed to write assets file: %v", err)
+		switch output.Language {
+		case "go":
+			if err := GoPrepare(output); err != nil {
+				return err
 			}
+		case "typescript":
+			if err := TypescriptPrepare(output); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unsupported language: %s", output.Language)
 		}
 
 		walkErr := filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {

@@ -7,16 +7,6 @@ import (
 	"strings"
 )
 
-func toGolangFolderByNamespace(namespace string) string {
-	//  change all namespace to lowercase
-	namespace = strings.ToLower(namespace)
-
-	// replace . with _
-	namespace = strings.ReplaceAll(namespace, ".", "_")
-
-	return namespace
-}
-
 func toGolangName(name string) string {
 	if name[0] >= 'a' && name[0] <= 'z' {
 		return strings.ToUpper(name[:1]) + name[1:]
@@ -25,7 +15,7 @@ func toGolangName(name string) string {
 	}
 }
 
-func toGolangType(goModule string, currentPackage string, name string) (string, string) {
+func toGolangType(location string, goModule string, currentPackage string, name string) (string, string) {
 	name = strings.TrimSpace(name)
 
 	switch name {
@@ -47,16 +37,16 @@ func toGolangType(goModule string, currentPackage string, name string) (string, 
 		// if name is List<innter>, then return []inner
 		if strings.HasPrefix(name, "List<") && strings.HasSuffix(name, ">") {
 			innerType := name[5 : len(name)-1]
-			ret, pkg := toGolangType(goModule, currentPackage, innerType)
+			ret, pkg := toGolangType(location, goModule, currentPackage, innerType)
 			return fmt.Sprintf("[]%s", ret), pkg
 		} else if strings.HasPrefix(name, "Map<") && strings.HasSuffix(name, ">") {
 			innerType := name[4 : len(name)-1] // Remove "Map<" and ">"
-			ret, pkg := toGolangType(goModule, currentPackage, innerType)
+			ret, pkg := toGolangType(location, goModule, currentPackage, innerType)
 			return fmt.Sprintf("map[string]%s", ret), pkg
 		} else if strings.HasPrefix(name, "DB.") || strings.HasPrefix(name, "API.") {
 			nameArr := strings.Split(name, "@")
 			if len(nameArr) == 2 {
-				pkgName := toGolangFolderByNamespace(nameArr[0])
+				pkgName := NamespaceToFolder(location, nameArr[0])
 
 				if pkgName == currentPackage {
 					return nameArr[1], ""
@@ -86,7 +76,7 @@ func (p *GoBuilder) BuildServer() error {
 		return fmt.Errorf("namespace is required")
 	}
 
-	currentPackage := toGolangFolderByNamespace(p.apiConfig.Namespace)
+	currentPackage := NamespaceToFolder(p.location, p.apiConfig.Namespace)
 
 	outDir := filepath.Join(p.output.Dir, currentPackage)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
@@ -111,7 +101,7 @@ package %s
 			attributes := []string{}
 			fullDefineName := p.apiConfig.Namespace + "@" + name
 			for _, attribute := range define.Attributes {
-				attrType, pkg := toGolangType(p.output.GoModule, currentPackage, attribute.Type)
+				attrType, pkg := toGolangType(p.location, p.output.GoModule, currentPackage, attribute.Type)
 				if pkg != "" {
 					imports = append(imports, pkg)
 				}
@@ -147,7 +137,7 @@ package %s
 			callParameters := []string{}
 			fullActionName := p.apiConfig.Namespace + ":" + name
 			for _, parameter := range action.Parameters {
-				typeName, typePkg := toGolangType(p.output.GoModule, currentPackage, parameter.Type)
+				typeName, typePkg := toGolangType(p.location, p.output.GoModule, currentPackage, parameter.Type)
 				if typePkg != "" {
 					imports = append(imports, typePkg)
 				}
@@ -167,7 +157,7 @@ package %s
 				callParameters = append(callParameters, "v."+goParameterName)
 			}
 
-			returnType, typePkg := toGolangType(p.output.GoModule, currentPackage, action.Return.Type)
+			returnType, typePkg := toGolangType(p.location, p.output.GoModule, currentPackage, action.Return.Type)
 			if typePkg != "" {
 				imports = append(imports, typePkg)
 			}

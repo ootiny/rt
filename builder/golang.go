@@ -49,7 +49,7 @@ func toGolangType(location string, goModule string, currentPackage string, name 
 			innerType := name[4 : len(name)-1] // Remove "Map<" and ">"
 			ret, pkg := toGolangType(location, goModule, currentPackage, innerType)
 			return fmt.Sprintf("map[string]%s", ret), pkg
-		} else if strings.HasPrefix(name, "DB.") || strings.HasPrefix(name, "API.") {
+		} else if strings.HasPrefix(name, DBPrefix) || strings.HasPrefix(name, APIPrefix) {
 			nameArr := strings.Split(name, "@")
 			if len(nameArr) == 2 {
 				pkgName := NamespaceToFolder(location, nameArr[0])
@@ -138,6 +138,8 @@ package %s
 
 	registerFuncs := []string{}
 
+	needImportBasePackage := false
+
 	// definitions
 	for name, define := range p.apiConfig.Definitions {
 		if len(define.Attributes) > 0 {
@@ -167,12 +169,35 @@ package %s
 				name,
 				strings.Join(attributes, "\n"),
 			))
+
+			if strings.HasPrefix(p.apiConfig.Namespace, DBPrefix) {
+				defines = append(defines, fmt.Sprintf(
+					"type %sBytes = []byte",
+					name,
+				))
+				defines = append(defines, fmt.Sprintf(
+					"func Unmarshal%s(data []byte, v *%s) error {\n\t return %s.JsonUnmarshal(data, v)\n}",
+					name,
+					name,
+					p.output.GoPackage,
+				))
+				defines = append(defines, fmt.Sprintf(
+					"func %sBytesTo%s(data []byte) (*%s, error) {\n\tvar v %s\n\tif err := %s.JsonUnmarshal(data, &v); err != nil {\n\t\treturn nil, err\n\t}\n\treturn &v, nil\n}\n",
+					name,
+					name,
+					name,
+					name,
+					p.output.GoPackage,
+				))
+
+				needImportBasePackage = true
+			}
 		}
 	}
 
 	// actions
 	if len(p.apiConfig.Actions) > 0 {
-		imports = append(imports, fmt.Sprintf("\t\"%s\"", p.output.GoModule))
+		needImportBasePackage = true
 
 		for name, action := range p.apiConfig.Actions {
 			parameters := []string{}
@@ -266,6 +291,10 @@ package %s
 				funcBody,
 			))
 		}
+	}
+
+	if needImportBasePackage {
+		imports = append(imports, fmt.Sprintf("\t\"%s\"", p.output.GoModule))
 	}
 
 	importsContent := ""

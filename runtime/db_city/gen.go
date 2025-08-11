@@ -3,6 +3,7 @@ package db_city
 
 import (
 	"github.com/ootiny/rt/runtime/db_geo"
+	"github.com/ootiny/rt/runtime"
 )
 
 // definition: DB.City@Full
@@ -11,6 +12,18 @@ type Full struct {
 	Name string `json:"name" required:"true"`
 	Geo db_geo.Full `json:"geo" required:"false"`
 	Active bool `json:"active" required:"false"`
+}
+
+type FullBytes = []byte
+func UnmarshalFull(data []byte, v *Full) error {
+	 return runtime.JsonUnmarshal(data, v)
+}
+func FullBytesToFull(data []byte) (*Full, error) {
+	var v Full
+	if err := runtime.JsonUnmarshal(data, &v); err != nil {
+		return nil, err
+	}
+	return &v, nil
 }
 
 

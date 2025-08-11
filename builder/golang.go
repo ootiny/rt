@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+var goServerCommonFile = "server_common.go"
+
+var goEngineMap = map[string]string{
+	"net/http": "engine_net_http.go",
+}
+
 func toGolangName(name string) string {
 	if name[0] >= 'a' && name[0] <= 'z' {
 		return strings.ToUpper(name[:1]) + name[1:]
@@ -66,14 +72,9 @@ func toGolangType(location string, goModule string, currentPackage string, name 
 func GoPrepare(output RTOutputConfig) error {
 	switch output.Kind {
 	case "server":
-		engineFile := fmt.Sprintf("%s.%s", engineMap[output.HttpEngine], languageTailMap[output.Language])
-		commonFile := fmt.Sprintf("common.%s", languageTailMap[output.Language])
 		systemDir := filepath.Join(output.Dir)
-		assetEgineFile := fmt.Sprintf("assets/%s/%s", output.Language, engineFile)
-		assetCommonFile := fmt.Sprintf("assets/%s/%s", output.Language, commonFile)
-
-		replaceName := ""
-		replaceContent := ""
+		assetEgineFile := fmt.Sprintf("assets/%s/%s", output.Language, goEngineMap[output.HttpEngine])
+		assetCommonFile := fmt.Sprintf("assets/%s/%s", output.Language, goServerCommonFile)
 
 		if err := os.RemoveAll(systemDir); err != nil {
 			return fmt.Errorf("failed to remove system dir: %v", err)
@@ -83,21 +84,20 @@ func GoPrepare(output RTOutputConfig) error {
 			return fmt.Errorf("failed to read assets file: %v", err)
 		} else if commonContent, err := assets.ReadFile(assetCommonFile); err != nil {
 			return fmt.Errorf("failed to read assets file: %v", err)
-		} else if err := func() error {
+		} else {
 			// replace package name or namespace if needed
-			replaceName = "package _rt_package_name_"
-			replaceContent = fmt.Sprintf("package %s", output.GoPackage)
+			replaceName := "package _rt_package_name_"
+			replaceContent := fmt.Sprintf("package %s", output.GoPackage)
 			engineContent = []byte(strings.ReplaceAll(string(engineContent), replaceName, replaceContent))
 			commonContent = []byte(strings.ReplaceAll(string(commonContent), replaceName, replaceContent))
-			return nil
-		}(); err != nil {
-			return fmt.Errorf("failed to process assets content: %v", err)
-		} else if err := os.WriteFile(filepath.Join(systemDir, "engine."+languageTailMap[output.Language]), engineContent, 0644); err != nil {
-			return fmt.Errorf("failed to write assets file: %v", err)
-		} else if err := os.WriteFile(filepath.Join(systemDir, commonFile), commonContent, 0644); err != nil {
-			return fmt.Errorf("failed to write assets file: %v", err)
-		} else {
-			return nil
+
+			if err := os.WriteFile(filepath.Join(systemDir, "engine.go"), engineContent, 0644); err != nil {
+				return fmt.Errorf("failed to write assets file: %v", err)
+			} else if err := os.WriteFile(filepath.Join(systemDir, "common.go"), commonContent, 0644); err != nil {
+				return fmt.Errorf("failed to write assets file: %v", err)
+			} else {
+				return nil
+			}
 		}
 	case "client":
 		return fmt.Errorf("not implemented")

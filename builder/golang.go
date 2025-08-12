@@ -35,8 +35,6 @@ func toGolangType(location string, goModule string, currentPackage string, name 
 		return "byte", ""
 	case "Bytes":
 		return "[]byte", ""
-	case "Error":
-		return "error", ""
 	default:
 		// if name is List<innter>, then return []inner
 		if strings.HasPrefix(name, "List<") && strings.HasSuffix(name, ">") {
@@ -304,6 +302,11 @@ package %s
 		defineContent = strings.Join(defines, "\n")
 	}
 
+	actionContent := ""
+	if len(actions) > 0 {
+		actionContent = strings.Join(actions, "\n")
+	}
+
 	registerContent := ""
 	if len(registerFuncs) > 0 {
 		registerContent = fmt.Sprintf("func init() {\n%s\n}", strings.Join(registerFuncs, "\n"))
@@ -314,7 +317,7 @@ package %s
 		header,
 		importsContent,
 		defineContent,
-		strings.Join(actions, "\n"),
+		actionContent,
 		registerContent,
 		BuilderEndTag,
 	)

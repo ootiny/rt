@@ -1,0 +1,42 @@
+async function fetchJson(
+  url: string,
+  action: string,
+  method: string,
+  data: any
+): Promise<any> {
+  const m = (method || "GET").toUpperCase();
+
+  const u = new URL(url);
+  u.searchParams.set("a", action);
+
+  const init: RequestInit = { method: m };
+  init.headers = { "Content-Type": "application/json" };
+  const dataJSON = JSON.stringify(data);
+
+  if (m === "GET") {
+    u.searchParams.set("d", dataJSON);
+  } else {
+    init.body = dataJSON;
+  }
+
+  const resp = await fetch(u.toString(), init);
+
+  type Return = { code: number; message: string; data: any };
+  let parsed: Return;
+  try {
+    parsed = (await resp.json()) as Return;
+  } catch (e) {
+    throw new Error(
+      `Invalid JSON response: ${e instanceof Error ? e.message : String(e)}`
+    );
+  }
+
+  const code = parsed?.code;
+  const message = parsed?.message ?? "";
+
+  if (code === 200 || code === 0) {
+    return parsed.data;
+  }
+
+  throw new Error(message || `Request failed with code ${code}`);
+}

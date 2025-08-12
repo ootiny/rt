@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-var goServerCommonFile = "server_common.go"
-
 var goEngineMap = map[string]string{
 	"net/http": "engine_net_http.go",
 }
@@ -72,13 +70,12 @@ func toGolangType(location string, goModule string, currentPackage string, name 
 func GoPrepare(output RTOutputConfig) error {
 	switch output.Kind {
 	case "server":
-		systemDir := filepath.Join(output.Dir)
-		assetEgineFile := fmt.Sprintf("assets/%s/%s", output.Language, goEngineMap[output.HttpEngine])
-		assetCommonFile := fmt.Sprintf("assets/%s/%s", output.Language, goServerCommonFile)
+		assetEgineFile := fmt.Sprintf("assets/go/%s", goEngineMap[output.HttpEngine])
+		assetCommonFile := "assets/go/server_common.go"
 
-		if err := os.RemoveAll(systemDir); err != nil {
+		if err := os.RemoveAll(output.Dir); err != nil {
 			return fmt.Errorf("failed to remove system dir: %v", err)
-		} else if err := os.MkdirAll(systemDir, 0755); err != nil {
+		} else if err := os.MkdirAll(output.Dir, 0755); err != nil {
 			return fmt.Errorf("failed to create system dir: %v", err)
 		} else if engineContent, err := assets.ReadFile(assetEgineFile); err != nil {
 			return fmt.Errorf("failed to read assets file: %v", err)
@@ -91,9 +88,9 @@ func GoPrepare(output RTOutputConfig) error {
 			engineContent = []byte(strings.ReplaceAll(string(engineContent), replaceName, replaceContent))
 			commonContent = []byte(strings.ReplaceAll(string(commonContent), replaceName, replaceContent))
 
-			if err := os.WriteFile(filepath.Join(systemDir, "engine.go"), engineContent, 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(output.Dir, "engine.go"), engineContent, 0644); err != nil {
 				return fmt.Errorf("failed to write assets file: %v", err)
-			} else if err := os.WriteFile(filepath.Join(systemDir, "common.go"), commonContent, 0644); err != nil {
+			} else if err := os.WriteFile(filepath.Join(output.Dir, "common.go"), commonContent, 0644); err != nil {
 				return fmt.Errorf("failed to write assets file: %v", err)
 			} else {
 				return nil

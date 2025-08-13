@@ -206,15 +206,10 @@ func (p *TypescriptBuilder) buildClientWithConfig(apiConfig APIConfig) error {
 		actionContent += "}\n"
 	}
 
-	content := fmt.Sprintf(
-		"// %s: %s\n%s\n%s\n%s\n// %s",
-		BuilderStartTag,
-		BuilderDescription,
+	return WriteGeneratedFile(filepath.Join(outDir, "index.ts"), fmt.Sprintf(
+		"%s%s%s",
 		importsContent,
 		defineContent,
 		actionContent,
-		BuilderEndTag,
-	)
-
-	return os.WriteFile(filepath.Join(outDir, "index.ts"), []byte(content), 0644)
+	))
 }

@@ -116,7 +116,7 @@ func MakeApiConfigTree(configlist []APIConfig) *APIConfigNode {
 	for _, config := range nsMap {
 		nsArr := strings.Split(config.Namespace, ".")
 
-		if len(nsArr) > 1 && nsArr[0] == "API" {
+		if len(nsArr) > 1 && (nsArr[0] == "API" || nsArr[0] == "DB") {
 			for i := range nsArr {
 				partNS := strings.Join(nsArr[:i+1], ".")
 				if _, ok := buildMap[partNS]; !ok {
@@ -146,10 +146,14 @@ func MakeApiConfigTree(configlist []APIConfig) *APIConfigNode {
 		}
 	}
 
-	if root, ok := buildMap["API"]; ok {
-		return root
-	} else {
-		return nil
+	return &APIConfigNode{
+		name:      "",
+		namespace: "",
+		config:    nil,
+		children: map[string]*APIConfigNode{
+			"API": buildMap["API"],
+			"DB":  buildMap["DB"],
+		},
 	}
 }
 
@@ -216,6 +220,11 @@ func WriteGeneratedFile(filePath string, content string) error {
 		content,
 		BuilderEndTag,
 	)
+
+	// todo: create dir if not exists
+	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
 
 	return os.WriteFile(filePath, []byte(fileContent), 0644)
 }

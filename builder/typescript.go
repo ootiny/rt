@@ -82,25 +82,33 @@ func (p *TypescriptBuilder) BuildServer() error {
 }
 
 func (p *TypescriptBuilder) BuildClient() error {
-	for _, apiConfig := range p.apiConfigs {
-		if err := p.buildClientWithConfig(apiConfig); err != nil {
+	rootNode := MakeApiConfigTree(p.apiConfigs)
+	if rootNode == nil {
+		// no api found
+		return nil
+	}
+
+	if apiNode := rootNode.children["API"]; apiNode != nil {
+		if err := p.buildClientWithConfig(apiNode); err != nil {
 			return err
 		}
 	}
+
+	if dbNode := rootNode.children["DB"]; dbNode != nil {
+		if err := p.buildClientWithConfig(dbNode); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func (p *TypescriptBuilder) buildClientWithConfig(apiConfig APIConfig) error {
-	if apiConfig.Namespace == "" {
+func (p *TypescriptBuilder) buildClientWithConfig(node *APIConfigNode) error {
+	if node.namespace == "" {
 		return fmt.Errorf("namespace is required")
 	}
 
-	currentPackage := NamespaceToFolder(p.location, apiConfig.Namespace)
-
-	outDir := filepath.Join(p.output.Dir, currentPackage)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
-	}
+	currentPackage := NamespaceToFolder(p.location, node.namespace)
 
 	imports := []string{}
 
@@ -111,44 +119,46 @@ func (p *TypescriptBuilder) buildClientWithConfig(apiConfig APIConfig) error {
 	// needImportFetchJson := false
 
 	// definitions
-	for name, define := range apiConfig.Definitions {
-		if len(define.Attributes) > 0 {
-			attributes := []string{}
-			fullDefineName := apiConfig.Namespace + "@" + name
-			for _, attribute := range define.Attributes {
-				attrType, pkg := toTypeScriptType(p.location, currentPackage, attribute.Type)
-				if pkg != "" {
-					imports = append(imports, pkg)
+	if node.config != nil {
+		for name, define := range node.config.Definitions {
+			if len(define.Attributes) > 0 {
+				attributes := []string{}
+				fullDefineName := node.config.Namespace + "@" + name
+				for _, attribute := range define.Attributes {
+					attrType, pkg := toTypeScriptType(p.location, currentPackage, attribute.Type)
+					if pkg != "" {
+						imports = append(imports, pkg)
+					}
+
+					attributes = append(attributes, fmt.Sprintf(
+						"  %s: %s;",
+						attribute.Name,
+						attrType,
+					))
 				}
 
-				attributes = append(attributes, fmt.Sprintf(
-					"  %s: %s;",
-					attribute.Name,
-					attrType,
+				defines = append(defines, fmt.Sprintf(
+					"// definition: %s",
+					fullDefineName,
 				))
+				defines = append(defines, fmt.Sprintf(
+					"export interface %s {\n%s\n}\n",
+					name,
+					strings.Join(attributes, "\n"),
+				))
+
 			}
-
-			defines = append(defines, fmt.Sprintf(
-				"// definition: %s",
-				fullDefineName,
-			))
-			defines = append(defines, fmt.Sprintf(
-				"export interface %s {\n%s\n}\n",
-				name,
-				strings.Join(attributes, "\n"),
-			))
-
 		}
 	}
 
 	// actions
-	if len(apiConfig.Actions) > 0 {
+	if node.config != nil && len(node.config.Actions) > 0 {
 		imports = append(imports, "import { fetchJson } from \"../system/utils\";")
-		for name, action := range apiConfig.Actions {
+		for name, action := range node.config.Actions {
 			if len(action.Parameters) > 0 {
 				attributes := []string{}
 				dataAttrs := []string{}
-				fullActionName := apiConfig.Namespace + ":" + name
+				fullActionName := node.config.Namespace + ":" + name
 				method := strings.ToUpper(action.Method)
 				for _, attribute := range action.Parameters {
 					attrType, pkg := toTypeScriptType(p.location, currentPackage, attribute.Type)
@@ -206,10 +216,24 @@ func (p *TypescriptBuilder) buildClientWithConfig(apiConfig APIConfig) error {
 		actionContent += "}\n"
 	}
 
-	return WriteGeneratedFile(filepath.Join(outDir, "index.ts"), fmt.Sprintf(
-		"%s%s%s",
-		importsContent,
-		defineContent,
-		actionContent,
-	))
+	// build children
+	for _, child := range node.children {
+		if err := p.buildClientWithConfig(child); err != nil {
+			return err
+		}
+	}
+
+	if node.namespace == "DB" || node.namespace == "API" {
+		return nil
+	} else if strings.HasPrefix(node.namespace, "DB.") && node.config == nil {
+		return nil
+	} else {
+		// write file
+		return WriteGeneratedFile(filepath.Join(p.output.Dir, currentPackage, "index.ts"), fmt.Sprintf(
+			"%s%s%s",
+			importsContent,
+			defineContent,
+			actionContent,
+		))
+	}
 }

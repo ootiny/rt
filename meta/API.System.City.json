@@ -24,7 +24,11 @@
   "actions": {
     "Test": {
       "description": "Test",
-      "method": "GET"
+      "method": "GET",
+      "return": {
+        "type": "List<DB.City@Simple>",
+        "description": "The city"
+      }
     },
     "GetCityList": {
       "description": "Get city list",

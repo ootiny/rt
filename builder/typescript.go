@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -196,6 +197,7 @@ func (p *TypescriptBuilder) buildClientWithConfig(node *APIConfigNode) error {
 
 	importsContent := ""
 	if len(imports) > 0 {
+		imports = slices.Compact(imports)
 		importsContent = strings.Join(imports, "\n") + "\n"
 	}
 
@@ -223,10 +225,15 @@ func (p *TypescriptBuilder) buildClientWithConfig(node *APIConfigNode) error {
 		}
 	}
 
-	if node.namespace == "DB" || node.namespace == "API" {
+	if strings.HasPrefix(node.namespace, "DB") && node.config == nil {
 		return nil
-	} else if strings.HasPrefix(node.namespace, "DB.") && node.config == nil {
-		return nil
+	} else if node.namespace == "API" {
+		return WriteGeneratedFile(filepath.Join(p.output.Dir, "index.ts"), fmt.Sprintf(
+			"%s%s%s",
+			importsContent,
+			defineContent,
+			actionContent,
+		))
 	} else {
 		// write file
 		return WriteGeneratedFile(filepath.Join(p.output.Dir, currentPackage, "index.ts"), fmt.Sprintf(

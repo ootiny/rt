@@ -8,4 +8,10 @@ export interface Full {
   active: boolean;
 }
 
+// definition: DB.City@Simple
+export interface Simple {
+  id: string;
+  name: string;
+}
+
 // tag-rt-api-builder-end

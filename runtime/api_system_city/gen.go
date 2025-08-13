@@ -13,7 +13,7 @@ type CityList struct {
 
 // Action: API.System.City:Test
 var fnTest FuncTest
-type FuncTest = func() runtime.Error
+type FuncTest = func() ([]db_city.Simple, runtime.Error)
 func HookTest (fn FuncTest) {
 	fnTest = fn
 }
@@ -29,10 +29,10 @@ func init() {
 	runtime.RegisterHandler("API.System.City:Test", func(ctx runtime.Context, response runtime.Response, data []byte) *runtime.Return {
 		if fnTest == nil {
 			return &runtime.Return{Code: runtime.ErrActionNotImplemented, Message: "API.System.City:Test is not implemented"}
-		} else if err := fnTest(); err != nil {
+		} else if result, err := fnTest(); err != nil {
 			return &runtime.Return{Code: err.GetCode(), Message: err.Error()}
 		} else {
-			return &runtime.Return{}
+			return &runtime.Return{Data: result}
 		}
 	})
 	runtime.RegisterHandler("API.System.City:GetCityList", func(ctx runtime.Context, response runtime.Response, data []byte) *runtime.Return {

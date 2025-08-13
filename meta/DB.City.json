@@ -18,6 +18,10 @@
     "Full": {
       "cache": "30d",
       "columns": ["id", "name", "geo@Full", "active"]
+    },
+    "Simple": {
+      "cache": "30d",
+      "columns": ["id", "name"]
     }
   }
 }

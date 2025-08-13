@@ -25,5 +25,23 @@ func FullBytesToFull(data []byte) (*Full, error) {
 	return &v, nil
 }
 
+// definition: DB.City@Simple
+type Simple struct {
+	Id string `json:"id" required:"true"`
+	Name string `json:"name" required:"true"`
+}
+
+type SimpleBytes = []byte
+func UnmarshalSimple(data []byte, v *Simple) error {
+	 return runtime.JsonUnmarshal(data, v)
+}
+func SimpleBytesToSimple(data []byte) (*Simple, error) {
+	var v Simple
+	if err := runtime.JsonUnmarshal(data, &v); err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
 
 // tag-rt-api-builder-end

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -299,6 +300,7 @@ func (p *GoBuilder) buildServerWithConfig(apiConfig APIConfig) error {
 
 	importsContent := ""
 	if len(imports) > 0 {
+		imports = slices.Compact(imports)
 		importsContent = fmt.Sprintf("import (\n%s\n)\n", strings.Join(imports, "\n")) + "\n"
 	}
 

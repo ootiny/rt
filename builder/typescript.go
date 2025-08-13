@@ -141,6 +141,49 @@ func (p *TypescriptBuilder) buildClientWithConfig(apiConfig APIConfig) error {
 		}
 	}
 
+	// actions
+	if len(apiConfig.Actions) > 0 {
+		imports = append(imports, "import { fetchJson } from \"../system/utils\";")
+		for name, action := range apiConfig.Actions {
+			if len(action.Parameters) > 0 {
+				attributes := []string{}
+				dataAttrs := []string{}
+				fullActionName := apiConfig.Namespace + ":" + name
+				method := strings.ToUpper(action.Method)
+				for _, attribute := range action.Parameters {
+					attrType, pkg := toTypeScriptType(p.location, currentPackage, attribute.Type)
+					if pkg != "" {
+						imports = append(imports, pkg)
+					}
+
+					attributes = append(attributes, fmt.Sprintf(
+						"%s: %s",
+						attribute.Name,
+						attrType,
+					))
+					if attribute.Required {
+						dataAttrs = append(dataAttrs, attribute.Name)
+					}
+				}
+
+				returnType, pkg := toTypeScriptType(p.location, currentPackage, action.Return.Type)
+				if pkg != "" {
+					imports = append(imports, pkg)
+				}
+				if returnType == "" {
+					returnType = "void"
+				}
+
+				actionStr := fmt.Sprintf("\t// action: %s\n", fullActionName)
+				actionStr += fmt.Sprintf("\tasync %s(%s): Promise<%s> {\n", name, strings.Join(attributes, ", "), returnType)
+				actionStr += fmt.Sprintf("\t\treturn fetchJson(this.url, \"%s\", \"%s\", { %s })\n", fullActionName, method, strings.Join(dataAttrs, ", "))
+				actionStr += "\t}\n"
+
+				actions = append(actions, actionStr)
+			}
+		}
+	}
+
 	importsContent := ""
 	if len(imports) > 0 {
 		importsContent = strings.Join(imports, "\n") + "\n"
@@ -153,7 +196,14 @@ func (p *TypescriptBuilder) buildClientWithConfig(apiConfig APIConfig) error {
 
 	actionContent := ""
 	if len(actions) > 0 {
-		actionContent = strings.Join(actions, "\n")
+		actionContent = "export class __Main__ {\n"
+		actionContent += "\tprivate url: string;\n"
+		actionContent += "\tconstructor(url: string) {\n"
+		actionContent += "\t\tthis.url = url;\n"
+		actionContent += "\t}\n"
+		actionContent += "\n"
+		actionContent += strings.Join(actions, "\n")
+		actionContent += "}\n"
 	}
 
 	content := fmt.Sprintf(

@@ -31,8 +31,6 @@ func toGolangType(location string, goModule string, currentPackage string, name 
 		return "int64", ""
 	case "Bool":
 		return "bool", ""
-	case "Byte":
-		return "byte", ""
 	case "Bytes":
 		return "[]byte", ""
 	default:

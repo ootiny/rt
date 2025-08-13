@@ -19,10 +19,8 @@ func toTypeScriptType(location string, currentPackage string, name string) (stri
 		return "number", ""
 	case "Bool":
 		return "boolean", ""
-	case "Byte":
-		return "byte", ""
 	case "Bytes":
-		return "Uint8Array", ""
+		return "string", ""
 	default:
 		// if name is List<innter>, then return []inner
 		if strings.HasPrefix(name, "List<") && strings.HasSuffix(name, ">") {

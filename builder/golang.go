@@ -128,7 +128,7 @@ func (p *GoBuilder) buildServerWithConfig(apiConfig APIConfig) error {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	header := fmt.Sprintf(`package %s\n`, currentPackage)
+	header := fmt.Sprintf("package %s\n", currentPackage)
 
 	imports := []string{}
 
@@ -299,17 +299,17 @@ func (p *GoBuilder) buildServerWithConfig(apiConfig APIConfig) error {
 
 	importsContent := ""
 	if len(imports) > 0 {
-		importsContent = fmt.Sprintf("import (\n%s\n)", strings.Join(imports, "\n")) + "\n"
+		importsContent = fmt.Sprintf("import (\n%s\n)\n", strings.Join(imports, "\n")) + "\n"
 	}
 
 	defineContent := ""
 	if len(defines) > 0 {
-		defineContent = strings.Join(defines, "\n")
+		defineContent = strings.Join(defines, "\n") + "\n"
 	}
 
 	actionContent := ""
 	if len(actions) > 0 {
-		actionContent = strings.Join(actions, "\n")
+		actionContent = strings.Join(actions, "\n") + "\n"
 	}
 
 	registerContent := ""
@@ -318,7 +318,7 @@ func (p *GoBuilder) buildServerWithConfig(apiConfig APIConfig) error {
 	}
 
 	return WriteGeneratedFile(filepath.Join(outDir, "gen.go"), fmt.Sprintf(
-		"%s%s%s%s%s%s",
+		"%s%s%s%s%s",
 		header,
 		importsContent,
 		defineContent,

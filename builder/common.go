@@ -418,9 +418,13 @@ func Output() error {
 
 		switch context.output.Kind {
 		case "server":
-			return builder.BuildServer()
+			if err := builder.BuildServer(); err != nil {
+				return err
+			}
 		case "client":
-			return builder.BuildClient()
+			if err := builder.BuildClient(); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("unsupported kind: %s", context.output.Kind)
 		}

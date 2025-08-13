@@ -88,9 +88,9 @@ func (p *GoBuilder) Prepare() error {
 			engineContent = []byte(strings.ReplaceAll(string(engineContent), replaceName, replaceContent))
 			commonContent = []byte(strings.ReplaceAll(string(commonContent), replaceName, replaceContent))
 
-			if err := os.WriteFile(filepath.Join(p.output.Dir, "engine.go"), engineContent, 0644); err != nil {
+			if err := WriteGeneratedFile(filepath.Join(p.output.Dir, "engine.go"), string(engineContent)); err != nil {
 				return fmt.Errorf("failed to write assets file: %v", err)
-			} else if err := os.WriteFile(filepath.Join(p.output.Dir, "common.go"), commonContent, 0644); err != nil {
+			} else if err := WriteGeneratedFile(filepath.Join(p.output.Dir, "common.go"), string(commonContent)); err != nil {
 				return fmt.Errorf("failed to write assets file: %v", err)
 			} else {
 				return nil

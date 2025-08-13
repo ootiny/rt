@@ -41,3 +41,25 @@ export async function fetchJson(
 
   throw new Error(message || `Request failed with code ${code}`);
 }
+
+// class APISystemCityClass {
+//   private url: string;
+
+//   constructor(url: string) {
+//     this.url = url;
+//   }
+
+//   async GetCityList(country: string): Promise<CityList> {
+//     const method = "GET";
+//     const action = "API.System.City:GetCityList";
+//     const data = {
+//       country,
+//     };
+
+//     return await fetchJson(this.url, action, method, data);
+//   }
+// }
+
+// export function __NewAPISystemCity__(url: string): APISystemCityClass {
+//   return new APISystemCityClass(url);
+// }

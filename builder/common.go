@@ -133,6 +133,19 @@ func MakeApiConfigTree(configlist []APIConfig) *APIConfigNode {
 		}
 	}
 
+	// 建立父子关系
+	for namespace, node := range buildMap {
+		nsArr := strings.Split(namespace, ".")
+		if len(nsArr) > 1 {
+			// 找到父节点的namespace
+			parentNS := strings.Join(nsArr[:len(nsArr)-1], ".")
+			if parentNode, ok := buildMap[parentNS]; ok {
+				// 将当前节点添加到父节点的children中
+				parentNode.children[node.name] = node
+			}
+		}
+	}
+
 	if root, ok := buildMap["API"]; ok {
 		return root
 	} else {

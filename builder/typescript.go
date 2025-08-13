@@ -51,13 +51,17 @@ func toTypeScriptType(location string, currentPackage string, name string) (stri
 	}
 }
 
-func TypescriptPrepare(output RTOutputConfig) error {
-	switch output.Kind {
+type TypescriptBuilder struct {
+	BuildContext
+}
+
+func (p *TypescriptBuilder) Prepare() error {
+	switch p.output.Kind {
 	case "server":
 		return fmt.Errorf("not implemented")
 	case "client":
-		systemDir := filepath.Join(output.Dir, "system")
-		if err := os.RemoveAll(output.Dir); err != nil {
+		systemDir := filepath.Join(p.output.Dir, "system")
+		if err := os.RemoveAll(p.output.Dir); err != nil {
 			return fmt.Errorf("failed to remove system dir: %v", err)
 		} else if err := os.MkdirAll(systemDir, 0755); err != nil {
 			return fmt.Errorf("failed to create system dir: %v", err)
@@ -69,12 +73,8 @@ func TypescriptPrepare(output RTOutputConfig) error {
 			return nil
 		}
 	default:
-		return fmt.Errorf("unknown output kind: %s", output.Kind)
+		return fmt.Errorf("unknown output kind: %s", p.output.Kind)
 	}
-}
-
-type TypescriptBuilder struct {
-	BuildContext
 }
 
 func (p *TypescriptBuilder) BuildServer() error {
@@ -82,11 +82,20 @@ func (p *TypescriptBuilder) BuildServer() error {
 }
 
 func (p *TypescriptBuilder) BuildClient() error {
-	if p.apiConfig.Namespace == "" {
+	for _, apiConfig := range p.apiConfigs {
+		if err := p.buildClientWithConfig(apiConfig); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *TypescriptBuilder) buildClientWithConfig(apiConfig APIConfig) error {
+	if apiConfig.Namespace == "" {
 		return fmt.Errorf("namespace is required")
 	}
 
-	currentPackage := NamespaceToFolder(p.location, p.apiConfig.Namespace)
+	currentPackage := NamespaceToFolder(p.location, apiConfig.Namespace)
 
 	outDir := filepath.Join(p.output.Dir, currentPackage)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
@@ -102,10 +111,10 @@ func (p *TypescriptBuilder) BuildClient() error {
 	// needImportFetchJson := false
 
 	// definitions
-	for name, define := range p.apiConfig.Definitions {
+	for name, define := range apiConfig.Definitions {
 		if len(define.Attributes) > 0 {
 			attributes := []string{}
-			fullDefineName := p.apiConfig.Namespace + "@" + name
+			fullDefineName := apiConfig.Namespace + "@" + name
 			for _, attribute := range define.Attributes {
 				attrType, pkg := toTypeScriptType(p.location, currentPackage, attribute.Type)
 				if pkg != "" {

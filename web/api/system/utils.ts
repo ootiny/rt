@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-async function fetchJson(
+export async function fetchJson(
   url: string,
   action: string,
   method: string,

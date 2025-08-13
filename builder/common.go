@@ -26,15 +26,16 @@ const DBPrefix = "DB."
 const APIPrefix = "API."
 
 type IBuilder interface {
+	Prepare() error
 	BuildServer() error
 	BuildClient() error
 }
 
 type BuildContext struct {
-	location  string
-	rtConfig  RTConfig
-	apiConfig APIConfig
-	output    RTOutputConfig
+	location   string
+	rtConfig   RTConfig
+	apiConfigs []APIConfig
+	output     RTOutputConfig
 }
 
 type RTOutputConfig struct {
@@ -331,20 +332,9 @@ func Output() error {
 	log.Printf("rt: project dir: %s\n", projectDir)
 	log.Printf("rt: config file: %s\n", rtConfig.GetFilePath())
 
-	for _, output := range rtConfig.Outputs {
-		switch output.Language {
-		case "go":
-			if err := GoPrepare(output); err != nil {
-				return err
-			}
-		case "typescript":
-			if err := TypescriptPrepare(output); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unsupported language: %s", output.Language)
-		}
+	apiConfigs := []APIConfig{}
 
+	for _, output := range rtConfig.Outputs {
 		walkErr := filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -365,23 +355,15 @@ func Output() error {
 					if apiConfig, err := LoadAPIConfig(path); err != nil {
 						return err
 					} else {
-						return OutputFile(BuildContext{
-							location:  MainLocation,
-							rtConfig:  rtConfig,
-							apiConfig: apiConfig,
-							output:    output,
-						})
+						apiConfigs = append(apiConfigs, apiConfig)
+						return nil
 					}
 				} else if slices.Contains(dbVersions, header.Version) {
 					if apiConfig, err := LoadAPIConfigFromDB(path); err != nil {
 						return err
 					} else {
-						return OutputFile(BuildContext{
-							location:  MainLocation,
-							rtConfig:  rtConfig,
-							apiConfig: apiConfig,
-							output:    output,
-						})
+						apiConfigs = append(apiConfigs, apiConfig)
+						return nil
 					}
 				} else {
 					return nil
@@ -394,35 +376,42 @@ func Output() error {
 		if walkErr != nil {
 			return fmt.Errorf("error walking project directory: %w", walkErr)
 		}
+
+		var builder IBuilder
+
+		context := BuildContext{
+			location:   MainLocation,
+			rtConfig:   rtConfig,
+			apiConfigs: apiConfigs,
+			output:     output,
+		}
+
+		switch output.Language {
+		case "go":
+			builder = &GoBuilder{
+				BuildContext: context,
+			}
+		case "typescript":
+			builder = &TypescriptBuilder{
+				BuildContext: context,
+			}
+		default:
+			return fmt.Errorf("unsupported language: %s", context.output.Language)
+		}
+
+		if err := builder.Prepare(); err != nil {
+			return err
+		}
+
+		switch context.output.Kind {
+		case "server":
+			return builder.BuildServer()
+		case "client":
+			return builder.BuildClient()
+		default:
+			return fmt.Errorf("unsupported kind: %s", context.output.Kind)
+		}
 	}
 
 	return nil
-}
-
-func OutputFile(
-	context BuildContext,
-) error {
-	var builder IBuilder
-
-	switch context.output.Language {
-	case "go":
-		builder = &GoBuilder{
-			BuildContext: context,
-		}
-	case "typescript":
-		builder = &TypescriptBuilder{
-			BuildContext: context,
-		}
-	default:
-		return fmt.Errorf("unsupported language: %s", context.output.Language)
-	}
-
-	switch context.output.Kind {
-	case "server":
-		return builder.BuildServer()
-	case "client":
-		return builder.BuildClient()
-	default:
-		return fmt.Errorf("unsupported kind: %s", context.output.Kind)
-	}
 }

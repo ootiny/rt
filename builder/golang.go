@@ -63,15 +63,19 @@ func toGolangType(location string, goModule string, currentPackage string, name 
 	}
 }
 
-func GoPrepare(output RTOutputConfig) error {
-	switch output.Kind {
+type GoBuilder struct {
+	BuildContext
+}
+
+func (p *GoBuilder) Prepare() error {
+	switch p.output.Kind {
 	case "server":
-		assetEgineFile := fmt.Sprintf("assets/go/%s", goEngineMap[output.HttpEngine])
+		assetEgineFile := fmt.Sprintf("assets/go/%s", goEngineMap[p.output.HttpEngine])
 		assetCommonFile := "assets/go/server_common.go"
 
-		if err := os.RemoveAll(output.Dir); err != nil {
+		if err := os.RemoveAll(p.output.Dir); err != nil {
 			return fmt.Errorf("failed to remove system dir: %v", err)
-		} else if err := os.MkdirAll(output.Dir, 0755); err != nil {
+		} else if err := os.MkdirAll(p.output.Dir, 0755); err != nil {
 			return fmt.Errorf("failed to create system dir: %v", err)
 		} else if engineContent, err := assets.ReadFile(assetEgineFile); err != nil {
 			return fmt.Errorf("failed to read assets file: %v", err)
@@ -80,13 +84,13 @@ func GoPrepare(output RTOutputConfig) error {
 		} else {
 			// replace package name or namespace if needed
 			replaceName := "package _rt_package_name_"
-			replaceContent := fmt.Sprintf("package %s", output.GoPackage)
+			replaceContent := fmt.Sprintf("package %s", p.output.GoPackage)
 			engineContent = []byte(strings.ReplaceAll(string(engineContent), replaceName, replaceContent))
 			commonContent = []byte(strings.ReplaceAll(string(commonContent), replaceName, replaceContent))
 
-			if err := os.WriteFile(filepath.Join(output.Dir, "engine.go"), engineContent, 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(p.output.Dir, "engine.go"), engineContent, 0644); err != nil {
 				return fmt.Errorf("failed to write assets file: %v", err)
-			} else if err := os.WriteFile(filepath.Join(output.Dir, "common.go"), commonContent, 0644); err != nil {
+			} else if err := os.WriteFile(filepath.Join(p.output.Dir, "common.go"), commonContent, 0644); err != nil {
 				return fmt.Errorf("failed to write assets file: %v", err)
 			} else {
 				return nil
@@ -95,12 +99,8 @@ func GoPrepare(output RTOutputConfig) error {
 	case "client":
 		return fmt.Errorf("not implemented")
 	default:
-		return fmt.Errorf("unknown output kind: %s", output.Kind)
+		return fmt.Errorf("unknown output kind: %s", p.output.Kind)
 	}
-}
-
-type GoBuilder struct {
-	BuildContext
 }
 
 func (p *GoBuilder) BuildClient() error {
@@ -108,11 +108,20 @@ func (p *GoBuilder) BuildClient() error {
 }
 
 func (p *GoBuilder) BuildServer() error {
-	if p.apiConfig.Namespace == "" {
+	for _, apiConfig := range p.apiConfigs {
+		if err := p.buildServerWithConfig(apiConfig); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *GoBuilder) buildServerWithConfig(apiConfig APIConfig) error {
+	if apiConfig.Namespace == "" {
 		return fmt.Errorf("namespace is required")
 	}
 
-	currentPackage := NamespaceToFolder(p.location, p.apiConfig.Namespace)
+	currentPackage := NamespaceToFolder(p.location, apiConfig.Namespace)
 
 	outDir := filepath.Join(p.output.Dir, currentPackage)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
@@ -134,10 +143,10 @@ package %s
 	needImportBasePackage := false
 
 	// definitions
-	for name, define := range p.apiConfig.Definitions {
+	for name, define := range apiConfig.Definitions {
 		if len(define.Attributes) > 0 {
 			attributes := []string{}
-			fullDefineName := p.apiConfig.Namespace + "@" + name
+			fullDefineName := apiConfig.Namespace + "@" + name
 			for _, attribute := range define.Attributes {
 				attrType, pkg := toGolangType(p.location, p.output.GoModule, currentPackage, attribute.Type)
 				if pkg != "" {
@@ -163,7 +172,7 @@ package %s
 				strings.Join(attributes, "\n"),
 			))
 
-			if strings.HasPrefix(p.apiConfig.Namespace, DBPrefix) {
+			if strings.HasPrefix(apiConfig.Namespace, DBPrefix) {
 				defines = append(defines, fmt.Sprintf(
 					"type %sBytes = []byte",
 					name,
@@ -189,14 +198,14 @@ package %s
 	}
 
 	// actions
-	if len(p.apiConfig.Actions) > 0 {
+	if len(apiConfig.Actions) > 0 {
 		needImportBasePackage = true
 
-		for name, action := range p.apiConfig.Actions {
+		for name, action := range apiConfig.Actions {
 			parameters := []string{}
 			structParameters := []string{}
 			callParameters := []string{}
-			fullActionName := p.apiConfig.Namespace + ":" + name
+			fullActionName := apiConfig.Namespace + ":" + name
 			for _, parameter := range action.Parameters {
 				typeName, typePkg := toGolangType(p.location, p.output.GoModule, currentPackage, parameter.Type)
 				if typePkg != "" {

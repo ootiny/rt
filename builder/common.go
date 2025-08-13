@@ -98,6 +98,48 @@ func (c *APIConfig) GetFilePath() string {
 	return c.__filepath__
 }
 
+type APIConfigNode struct {
+	name      string
+	namespace string
+	config    *APIConfig
+	children  map[string]*APIConfigNode
+}
+
+func MakeApiConfigTree(configlist []APIConfig) *APIConfigNode {
+	nsMap := map[string]APIConfig{}
+	for _, config := range configlist {
+		nsMap[config.Namespace] = config
+	}
+
+	buildMap := map[string]*APIConfigNode{}
+
+	for _, config := range nsMap {
+		nsArr := strings.Split(config.Namespace, ".")
+
+		if len(nsArr) > 1 && nsArr[0] == "API" {
+			for i := range nsArr {
+				partNS := strings.Join(nsArr[:i+1], ".")
+				if _, ok := buildMap[partNS]; !ok {
+					buildMap[partNS] = &APIConfigNode{
+						name:      nsArr[i],
+						namespace: partNS,
+						config:    nil,
+						children:  map[string]*APIConfigNode{},
+					}
+				}
+			}
+
+			buildMap[config.Namespace].config = &config
+		}
+	}
+
+	if root, ok := buildMap["API"]; ok {
+		return root
+	} else {
+		return nil
+	}
+}
+
 func ParseProjectDir(filePath string, projectDir string) (string, error) {
 	// Check for project directory placeholders in the filePath
 	patterns := []string{

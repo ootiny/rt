@@ -1,10 +1,14 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import { Client } from "../api";
+import * as api_system_city from "../api/api_system_city";
+import "./App.css";
+import reactLogo from "./assets/react.svg";
+import viteLogo from "/vite.svg";
+
+const client = new Client("http://localhost:8080");
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [cityList, setCityList] = useState<api_system_city.CityList>();
 
   return (
     <>
@@ -18,8 +22,14 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+        <button
+          onClick={async () => {
+            const ret = await client.System.City.GetCityList("cn");
+            console.log(ret);
+            setCityList(ret);
+          }}
+        >
+          {JSON.stringify(cityList)}
         </button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
@@ -29,7 +39,7 @@ function App() {
         Click on the Vite and React logos to learn more
       </p>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

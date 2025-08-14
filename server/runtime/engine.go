@@ -47,13 +47,13 @@ func NewHttpServer(addr string, certFile string, keyFile string, cors bool) *Ser
 		if cors {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 
-			// // Handle preflight OPTIONS request only when CORS is enabled
-			// if r.Method == http.MethodOptions {
-			// 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			// 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-			// 	w.WriteHeader(http.StatusNoContent)
-			// 	return
-			// }
+			// Handle preflight OPTIONS request only when CORS is enabled
+			if r.Method == http.MethodOptions {
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
 		}
 
 		action := r.URL.Query().Get("a")

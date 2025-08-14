@@ -195,6 +195,19 @@ func (p *TypescriptBuilder) buildClientWithConfig(node *APIConfigNode) error {
 		}
 	}
 
+	// children
+	childrenDefineContent := ""
+	childrenConstructorContent := ""
+	for name, child := range node.children {
+		tagetPackage := NamespaceToFolder(p.location, child.namespace)
+		if tagetPackage != currentPackage {
+			imports = append(imports, fmt.Sprintf("import * as %s from \"../%s\";", tagetPackage, tagetPackage))
+		}
+
+		childrenDefineContent += fmt.Sprintf("\tpublic %s: %s.__Main__;\n", name, tagetPackage)
+		childrenConstructorContent += fmt.Sprintf("\t\tthis.%s = new %s.__Main__(url);\n", name, tagetPackage)
+	}
+
 	importsContent := ""
 	if len(imports) > 0 {
 		imports = slices.Compact(imports)
@@ -207,11 +220,17 @@ func (p *TypescriptBuilder) buildClientWithConfig(node *APIConfigNode) error {
 	}
 
 	actionContent := ""
-	if len(actions) > 0 {
+	if len(actions) > 0 || childrenDefineContent != "" {
 		actionContent = "export class __Main__ {\n"
-		actionContent += "\tprivate url: string;\n"
+		if node.config != nil {
+			actionContent += "\tprivate url: string;\n"
+		}
+		actionContent += childrenDefineContent
 		actionContent += "\tconstructor(url: string) {\n"
-		actionContent += "\t\tthis.url = url;\n"
+		if node.config != nil {
+			actionContent += "\t\tthis.url = url;\n"
+		}
+		actionContent += childrenConstructorContent
 		actionContent += "\t}\n"
 		actionContent += "\n"
 		actionContent += strings.Join(actions, "\n")
@@ -227,13 +246,6 @@ func (p *TypescriptBuilder) buildClientWithConfig(node *APIConfigNode) error {
 
 	if strings.HasPrefix(node.namespace, "DB") && node.config == nil {
 		return nil
-	} else if node.namespace == "API" {
-		return WriteGeneratedFile(filepath.Join(p.output.Dir, "index.ts"), fmt.Sprintf(
-			"%s%s%s",
-			importsContent,
-			defineContent,
-			actionContent,
-		))
 	} else {
 		// write file
 		return WriteGeneratedFile(filepath.Join(p.output.Dir, currentPackage, "index.ts"), fmt.Sprintf(

@@ -9,8 +9,8 @@
     {
       "kind": "server",
       "language": "go",
-      "dir": "${ProjectDir}/runtime",
-      "goModule": "github.com/ootiny/rt/runtime",
+      "dir": "${ProjectDir}/server/runtime",
+      "goModule": "github.com/ootiny/rt/server/runtime",
       "httpEngine": "net/http"
     }
   ],

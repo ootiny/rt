@@ -12,7 +12,7 @@ func init() {
 }
 
 func main() {
-	if err := runtime.NewHttpServer("0.0.0.0:8080", "", "").Run(); err != nil {
+	if err := runtime.NewHttpServer("0.0.0.0:8080", "", "", true).Run(); err != nil {
 		panic(err)
 	}
 }

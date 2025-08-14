@@ -38,20 +38,22 @@ func (p *GoResponse) WriteJson(data []byte) (int, error) {
 	return p.w.Write(data)
 }
 
-func NewHttpServer(addr string, certFile string, keyFile string) *Server {
+func NewHttpServer(addr string, certFile string, keyFile string, cors bool) *Server {
 	mux := http.NewServeMux()
 
 	// API handler function with CORS support
 	apiHandler := func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if cors {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
 
-		// Handle preflight OPTIONS request
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
+			// // Handle preflight OPTIONS request only when CORS is enabled
+			// if r.Method == http.MethodOptions {
+			// 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			// 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			// 	w.WriteHeader(http.StatusNoContent)
+			// 	return
+			// }
 		}
 
 		action := r.URL.Query().Get("a")
@@ -77,7 +79,7 @@ func NewHttpServer(addr string, certFile string, keyFile string) *Server {
 				}
 			}
 
-			if ret.Code == 0 {
+			if ret == nil || ret.Code == 0 {
 				ret = fn(&GoContext{action: action, r: r}, &GoResponse{w: w}, data)
 			}
 		}

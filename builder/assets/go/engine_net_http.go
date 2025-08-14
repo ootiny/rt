@@ -40,7 +40,19 @@ func (p *GoResponse) WriteJson(data []byte) (int, error) {
 func NewHttpServer(addr string, certFile string, keyFile string) *Server {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
+	// API handler function with CORS support
+	apiHandler := func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight OPTIONS request
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		action := r.URL.Query().Get("a")
 		ret := (*Return)(nil)
 		fn, ok := gHttpActionMap[action]
@@ -82,7 +94,9 @@ func NewHttpServer(addr string, certFile string, keyFile string) *Server {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write(retBytes)
 		}
-	})
+	}
+
+	mux.HandleFunc("/api", apiHandler)
 
 	return &Server{
 		addr:     addr,

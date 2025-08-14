@@ -5,7 +5,7 @@ import "./App.css";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 
-const client = new Client("http://localhost:8080");
+const client = new Client("http://localhost:8080/api");
 
 function App() {
   const [cityList, setCityList] = useState<api_system_city.CityList>();

@@ -25,11 +25,14 @@ type Response interface {
 	WriteJson(data []byte) (int, error)
 }
 
-type Context interface {
+type RequestContext interface {
 	Action() string
-	Method() string
 	Cookie(name string) (*http.Cookie, error)
 	Header(name string) string
+}
+
+type Context interface {
+	Request() RequestContext
 	Errorf(format string, args ...any) Error
 	ErrorWithCodef(code int, format string, args ...any) Error
 }
@@ -59,14 +62,13 @@ func (p *GoError) Error() string {
 	return p.err.Error()
 }
 
-type ContextBase struct {
-}
+type ErrorContext struct{}
 
-func (p *ContextBase) Errorf(format string, args ...any) Error {
+func (p *ErrorContext) Errorf(format string, args ...any) Error {
 	return NewError(ErrInternal, fmt.Errorf(format, args...))
 }
 
-func (p *ContextBase) ErrorWithCodef(code int, format string, args ...any) Error {
+func (p *ErrorContext) ErrorWithCodef(code int, format string, args ...any) Error {
 	return NewError(code, fmt.Errorf(format, args...))
 }
 

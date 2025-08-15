@@ -8,26 +8,30 @@ import (
 	"net/http"
 )
 
-type GoContext struct {
+type GoRequestContext struct {
 	action string
 	r      *http.Request
-	ContextBase
 }
 
-func (p *GoContext) Action() string {
+func (p *GoRequestContext) Action() string {
 	return p.action
 }
 
-func (p *GoContext) Method() string {
-	return p.r.Method
-}
-
-func (p *GoContext) Cookie(name string) (*http.Cookie, error) {
+func (p *GoRequestContext) Cookie(name string) (*http.Cookie, error) {
 	return p.r.Cookie(name)
 }
 
-func (p *GoContext) Header(name string) string {
+func (p *GoRequestContext) Header(name string) string {
 	return p.r.Header.Get(name)
+}
+
+type GoContext struct {
+	GoRequestContext
+	ErrorContext
+}
+
+func (p *GoContext) Request() RequestContext {
+	return &p.GoRequestContext
 }
 
 type GoResponse struct {
@@ -80,7 +84,10 @@ func NewHttpServer(addr string, certFile string, keyFile string, cors bool) *Ser
 			}
 
 			if ret == nil || ret.Code == 0 {
-				ret = fn(&GoContext{action: action, r: r}, &GoResponse{w: w}, data)
+				ret = fn(&GoContext{
+					GoRequestContext: GoRequestContext{action: action, r: r},
+					ErrorContext:     ErrorContext{},
+				}, &GoResponse{w: w}, data)
 			}
 		}
 

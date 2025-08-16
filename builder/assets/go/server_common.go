@@ -78,14 +78,3 @@ func RegisterHandler(action string, handler func(ctx Context, response Response,
 func JsonUnmarshal(data []byte, v any) error {
 	return json.Unmarshal(data, v)
 }
-
-func CallAction(url string, action string, method string, data []byte) ([]byte, error) {
-	switch method {
-	case http.MethodGet:
-		return nil, fmt.Errorf("method %s not supported", method)
-	case http.MethodPost:
-		return nil, fmt.Errorf("method %s not supported", method)
-	default:
-		return nil, fmt.Errorf("method %s not supported", method)
-	}
-}

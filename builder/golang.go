@@ -328,3 +328,7 @@ func (p *GoBuilder) buildServerWithConfig(apiConfig APIConfig) error {
 		registerContent,
 	))
 }
+
+func (p *GoBuilder) BuildDB() error {
+	return fmt.Errorf("not implemented")
+}

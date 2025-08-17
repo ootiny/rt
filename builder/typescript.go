@@ -272,3 +272,7 @@ func (p *TypescriptBuilder) buildClientWithConfig(node *APIConfigNode) error {
 		))
 	}
 }
+
+func (p *TypescriptBuilder) BuildDB() error {
+	return fmt.Errorf("not implemented")
+}

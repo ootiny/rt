@@ -26,6 +26,7 @@ type IBuilder interface {
 	Prepare() error
 	BuildServer() error
 	BuildClient() error
+	BuildDB() error
 }
 
 type BuildContext struct {

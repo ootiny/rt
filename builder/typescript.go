@@ -83,7 +83,17 @@ func (p *TypescriptBuilder) BuildServer() error {
 }
 
 func (p *TypescriptBuilder) BuildClient() error {
-	rootNode := MakeApiConfigTree(p.apiConfigs)
+	configs := []*APIConfig{}
+	configs = append(configs, p.apiConfigs...)
+	for _, dbConfig := range p.dbConfigs {
+		if apiConfig, err := dbConfig.ToApiConfig(); err != nil {
+			return err
+		} else {
+			configs = append(configs, apiConfig)
+		}
+	}
+
+	rootNode := MakeApiConfigTree(configs)
 	if rootNode == nil {
 		// no api found
 		return nil

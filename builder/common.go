@@ -17,6 +17,8 @@ import (
 //
 //go:embed all:assets
 var assets embed.FS
+var APIVersions = []string{"rt.api.v1"}
+var DBVersions = []string{"rt.db.v1"}
 
 const MainLocation = "main"
 const DBPrefix = "DB."
@@ -30,8 +32,9 @@ type IBuilder interface {
 
 type BuildContext struct {
 	location   string
-	rtConfig   RTConfig
-	apiConfigs []APIConfig
+	rtConfig   *RTConfig
+	apiConfigs []*APIConfig
+	dbConfigs  []*DBTableConfig
 	output     RTOutputConfig
 }
 
@@ -63,109 +66,6 @@ type RTConfig struct {
 
 func (c *RTConfig) GetFilePath() string {
 	return c.__filepath__
-}
-
-type APIDefinitionAttributeConfig struct {
-	Name        string `json:"name" required:"true"`
-	Type        string `json:"type" required:"true"`
-	Required    bool   `json:"required"`
-	Description string `json:"description"`
-}
-
-type APIDefinitionConfig struct {
-	Description string                         `json:"description"`
-	Attributes  []APIDefinitionAttributeConfig `json:"attributes"`
-}
-
-type APIActionParameterConfig struct {
-	Name        string `json:"name" required:"true"`
-	Type        string `json:"type" required:"true"`
-	Required    bool   `json:"required"`
-	Description string `json:"description"`
-}
-
-type APIActionReturnConfig struct {
-	Type        string `json:"type" required:"true"`
-	Description string `json:"description"`
-}
-
-type APIActionConfig struct {
-	Description string                     `json:"description"`
-	Method      string                     `json:"method" required:"true"`
-	Parameters  []APIActionParameterConfig `json:"parameters"`
-	Return      APIActionReturnConfig      `json:"return"`
-}
-
-type APIConfig struct {
-	Version      string                         `json:"version" required:"true"`
-	Namespace    string                         `json:"namespace" required:"true"`
-	Description  string                         `json:"description"`
-	Definitions  map[string]APIDefinitionConfig `json:"definitions" required:"true"`
-	Actions      map[string]APIActionConfig     `json:"actions"`
-	__filepath__ string
-}
-
-func (c *APIConfig) GetFilePath() string {
-	return c.__filepath__
-}
-
-type APIConfigNode struct {
-	name      string
-	namespace string
-	config    *APIConfig
-	children  map[string]*APIConfigNode
-}
-
-func MakeApiConfigTree(configlist []APIConfig) *APIConfigNode {
-	nsMap := map[string]APIConfig{}
-	for _, config := range configlist {
-		nsMap[config.Namespace] = config
-	}
-
-	buildMap := map[string]*APIConfigNode{}
-
-	for _, config := range nsMap {
-		nsArr := strings.Split(config.Namespace, ".")
-
-		if len(nsArr) > 1 && (nsArr[0] == "API" || nsArr[0] == "DB") {
-			for i := range nsArr {
-				partNS := strings.Join(nsArr[:i+1], ".")
-				if _, ok := buildMap[partNS]; !ok {
-					buildMap[partNS] = &APIConfigNode{
-						name:      nsArr[i],
-						namespace: partNS,
-						config:    nil,
-						children:  map[string]*APIConfigNode{},
-					}
-				}
-			}
-
-			buildMap[config.Namespace].config = &config
-		}
-	}
-
-	// 建立父子关系
-	for namespace, node := range buildMap {
-		nsArr := strings.Split(namespace, ".")
-		if len(nsArr) > 1 {
-			// 找到父节点的namespace
-			parentNS := strings.Join(nsArr[:len(nsArr)-1], ".")
-			if parentNode, ok := buildMap[parentNS]; ok {
-				// 将当前节点添加到父节点的children中
-				parentNode.children[node.name] = node
-			}
-		}
-	}
-
-	return &APIConfigNode{
-		name:      "",
-		namespace: "",
-		config:    nil,
-		children: map[string]*APIConfigNode{
-			"API": buildMap["API"],
-			"DB":  buildMap["DB"],
-		},
-	}
 }
 
 func ParseProjectDir(filePath string, projectDir string) (string, error) {
@@ -266,7 +166,7 @@ func NamespaceToFolder(location string, namespace string) string {
 	}
 }
 
-func LoadRtConfig() (RTConfig, error) {
+func LoadRtConfig() (*RTConfig, error) {
 	configPath := ""
 
 	if len(os.Args) > 1 {
@@ -288,7 +188,7 @@ func LoadRtConfig() (RTConfig, error) {
 
 	if !filepath.IsAbs(configPath) {
 		if absPath, err := filepath.Abs(configPath); err != nil {
-			return RTConfig{}, fmt.Errorf("failed to convert config path to absolute path: %v", err)
+			return nil, fmt.Errorf("failed to convert config path to absolute path: %v", err)
 		} else {
 			configPath = absPath
 		}
@@ -297,7 +197,7 @@ func LoadRtConfig() (RTConfig, error) {
 	var config RTConfig
 
 	if err := UnmarshalConfig(configPath, &config); err != nil {
-		return RTConfig{}, fmt.Errorf("failed to parse config file: %w", err)
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
 	projectDir := filepath.Dir(configPath)
@@ -306,7 +206,7 @@ func LoadRtConfig() (RTConfig, error) {
 		var err error
 		config.Outputs[i].Dir, err = ParseProjectDir(output.Dir, projectDir)
 		if err != nil {
-			return RTConfig{}, fmt.Errorf("failed to parse output dir: %w", err)
+			return nil, fmt.Errorf("failed to parse output dir: %w", err)
 		}
 
 		if !filepath.IsAbs(config.Outputs[i].Dir) {
@@ -321,103 +221,7 @@ func LoadRtConfig() (RTConfig, error) {
 
 	config.__filepath__ = configPath
 
-	return config, nil
-}
-
-func LoadAPIConfig(filePath string) (APIConfig, error) {
-	var config APIConfig
-
-	if err := UnmarshalConfig(filePath, &config); err != nil {
-		return APIConfig{}, fmt.Errorf("failed to parse config file: %w", err)
-	}
-
-	config.__filepath__ = filePath
-
-	return config, nil
-}
-
-func LoadAPIConfigFromDB(filePath string) (APIConfig, error) {
-	fnDBTypeToAPIType := func(v string, klass string) string {
-		switch v {
-		case "PK":
-			return "String"
-		case "Bool":
-			return "Bool"
-		case "Int64":
-			return "Int64"
-		case "Float64":
-			return "Float64"
-		case "String", "String32", "String64", "String256":
-			return "String"
-		case "List<String>":
-			return "List<String>"
-		case "Map<String>":
-			return "Map<String>"
-		case "Bytes":
-			return "Bytes"
-		default:
-			if strings.HasPrefix(v, "List<") && strings.HasSuffix(v, ">") {
-				innerType := v[5 : len(v)-1]
-				return fmt.Sprintf("List<%s@%s>", innerType, klass)
-			} else if strings.HasPrefix(v, "Map<") && strings.HasSuffix(v, ">") {
-				innerType := v[4 : len(v)-1]
-				return fmt.Sprintf("Map<%s@%s>", innerType, klass)
-			} else if strings.HasPrefix(v, DBPrefix) {
-				return fmt.Sprintf("%s@%s", v, klass)
-			} else {
-				return v
-			}
-		}
-	}
-
-	var config struct {
-		Table   string `json:"table"`
-		Columns map[string]struct {
-			Type     string `json:"type"`
-			Required bool   `json:"required"`
-		} `json:"columns"`
-		Views map[string]struct {
-			Columns []string `json:"columns"`
-		} `json:"views"`
-	}
-
-	if err := UnmarshalConfig(filePath, &config); err != nil {
-		return APIConfig{}, fmt.Errorf("failed to parse config file: %w", err)
-	}
-
-	definitions := map[string]APIDefinitionConfig{}
-
-	for name, view := range config.Views {
-		attributes := []APIDefinitionAttributeConfig{}
-
-		for _, column := range view.Columns {
-			columnName := ""
-			columnType := ""
-			columnArray := strings.Split(column, "@")
-			if len(columnArray) == 1 {
-				columnName = columnArray[0]
-				columnType = fnDBTypeToAPIType(config.Columns[columnName].Type, "")
-			} else {
-				columnName = columnArray[0]
-				columnType = fnDBTypeToAPIType(config.Columns[columnName].Type, columnArray[1])
-			}
-
-			attributes = append(attributes, APIDefinitionAttributeConfig{
-				Name:     columnName,
-				Type:     columnType,
-				Required: config.Columns[columnName].Required,
-			})
-		}
-		definitions[name] = APIDefinitionConfig{
-			Attributes: attributes,
-		}
-	}
-
-	return APIConfig{
-		Version:     "rt.db.v1",
-		Namespace:   config.Table,
-		Definitions: definitions,
-	}, nil
+	return &config, nil
 }
 
 func Output() error {
@@ -426,13 +230,12 @@ func Output() error {
 		log.Panicf("Failed to load config: %v", err)
 	}
 
-	apiVersions := []string{"rt.api.v1"}
-	dbVersions := []string{"rt.db.v1"}
 	projectDir := filepath.Dir(rtConfig.GetFilePath())
 	log.Printf("rt: project dir: %s\n", projectDir)
 	log.Printf("rt: config file: %s\n", rtConfig.GetFilePath())
 
-	apiConfigs := []APIConfig{}
+	apiConfigs := []*APIConfig{}
+	dbConfigs := []*DBTableConfig{}
 
 	for _, output := range rtConfig.Outputs {
 		walkErr := filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
@@ -451,18 +254,18 @@ func Output() error {
 			case ".json", ".yaml", ".yml":
 				if err := UnmarshalConfig(path, &header); err != nil {
 					return nil // Not a rt config file, just ignore.  continue walking
-				} else if slices.Contains(apiVersions, header.Version) {
+				} else if slices.Contains(APIVersions, header.Version) {
 					if apiConfig, err := LoadAPIConfig(path); err != nil {
 						return err
 					} else {
 						apiConfigs = append(apiConfigs, apiConfig)
 						return nil
 					}
-				} else if slices.Contains(dbVersions, header.Version) {
-					if apiConfig, err := LoadAPIConfigFromDB(path); err != nil {
+				} else if slices.Contains(DBVersions, header.Version) {
+					if dbConfig, err := LoadDBTableConfig(path); err != nil {
 						return err
 					} else {
-						apiConfigs = append(apiConfigs, apiConfig)
+						dbConfigs = append(dbConfigs, dbConfig)
 						return nil
 					}
 				} else {
@@ -483,6 +286,7 @@ func Output() error {
 			location:   MainLocation,
 			rtConfig:   rtConfig,
 			apiConfigs: apiConfigs,
+			dbConfigs:  dbConfigs,
 			output:     output,
 		}
 

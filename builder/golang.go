@@ -113,15 +113,27 @@ func (p *GoBuilder) BuildServer() error {
 		return err
 	}
 
-	for _, apiConfig := range p.apiConfigs {
+	configs := []*APIConfig{}
+	configs = append(configs, p.apiConfigs...)
+
+	for _, dbConfig := range p.dbConfigs {
+		if apiConfig, err := dbConfig.ToApiConfig(); err != nil {
+			return err
+		} else {
+			configs = append(configs, apiConfig)
+		}
+	}
+
+	for _, apiConfig := range configs {
 		if err := p.buildServerWithConfig(apiConfig); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
-func (p *GoBuilder) buildServerWithConfig(apiConfig APIConfig) error {
+func (p *GoBuilder) buildServerWithConfig(apiConfig *APIConfig) error {
 	if apiConfig.Namespace == "" {
 		return fmt.Errorf("namespace is required")
 	}
@@ -340,6 +352,20 @@ func (p *GoBuilder) buildDB() error {
 	if err := WriteJSONFile(filepath.Join(assetDir, "db.json"), p.rtConfig.Database); err != nil {
 		return fmt.Errorf("failed to write assets file: %v", err)
 	}
+
+	// filter p.apiConfigs by DBVersions
+	dbConfigs := []*APIConfig{}
+	for _, apiConfig := range p.apiConfigs {
+		if !slices.Contains(DBVersions, apiConfig.Version) {
+			continue
+		}
+		dbConfigs = append(dbConfigs, apiConfig)
+	}
+
+	// convert dbConfigs to DBServiceConfig
+	// for _, dbConfig := range dbConfigs {
+
+	// }
 
 	return nil
 }

@@ -109,6 +109,10 @@ func (p *GoBuilder) BuildClient() error {
 }
 
 func (p *GoBuilder) BuildServer() error {
+	if err := p.buildDB(); err != nil {
+		return err
+	}
+
 	for _, apiConfig := range p.apiConfigs {
 		if err := p.buildServerWithConfig(apiConfig); err != nil {
 			return err
@@ -329,6 +333,13 @@ func (p *GoBuilder) buildServerWithConfig(apiConfig APIConfig) error {
 	))
 }
 
-func (p *GoBuilder) BuildDB() error {
-	return fmt.Errorf("not implemented")
+func (p *GoBuilder) buildDB() error {
+	assetDir := filepath.Join(p.output.Dir, "db")
+
+	// write p.rtConfig.Database to p.output.Dir/assets/db/db.json
+	if err := WriteJSONFile(filepath.Join(assetDir, "db.json"), p.rtConfig.Database); err != nil {
+		return fmt.Errorf("failed to write assets file: %v", err)
+	}
+
+	return nil
 }

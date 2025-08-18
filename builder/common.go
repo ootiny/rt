@@ -26,7 +26,6 @@ type IBuilder interface {
 	Prepare() error
 	BuildServer() error
 	BuildClient() error
-	BuildDB() error
 }
 
 type BuildContext struct {
@@ -218,6 +217,18 @@ func UnmarshalConfig(filePath string, v any) error {
 			return fmt.Errorf("unsupported file extension: %s", filepath.Ext(filePath))
 		}
 	}
+}
+
+func WriteJSONFile(filePath string, v any) error {
+	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	content, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filePath, content, 0644)
 }
 
 func WriteGeneratedFile(filePath string, content string) error {

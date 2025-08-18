@@ -84,10 +84,14 @@ func NewHttpServer(addr string, certFile string, keyFile string, cors bool) *Ser
 			}
 
 			if ret == nil || ret.Code == 0 {
-				ret = fn(&GoContext{
-					GoRequestContext: GoRequestContext{action: action, r: r},
-					ErrorContext:     ErrorContext{},
-				}, &GoResponse{w: w}, data)
+				ret = fn(
+					&GoContext{
+						GoRequestContext: GoRequestContext{action: action, r: r},
+						ErrorContext:     ErrorContext{},
+					},
+					&GoResponse{w: w},
+					data,
+				)
 			}
 		}
 

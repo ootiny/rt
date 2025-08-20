@@ -28,4 +28,5 @@ type DBTable struct {
 	Columns map[string]*DBTableColumn `json:"columns"`
 	Views   map[string]*DBTableView   `json:"views"`
 	Hash    string                    `json:"hash"`
+	File    string                    `json:"file"`
 }

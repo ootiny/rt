@@ -354,13 +354,6 @@ func (p *GoBuilder) buildDB() error {
 	}
 
 	// filter p.apiConfigs by DBVersions
-	dbConfigs := []*APIConfig{}
-	for _, apiConfig := range p.apiConfigs {
-		if !slices.Contains(DBVersions, apiConfig.Version) {
-			continue
-		}
-		dbConfigs = append(dbConfigs, apiConfig)
-	}
 
 	// convert dbConfigs to DBServiceConfig
 	// for _, dbConfig := range dbConfigs {

@@ -83,3 +83,17 @@ func NamespaceToFolder(location string, namespace string) string {
 		return fmt.Sprintf("%s_%s", location, namespace)
 	}
 }
+
+func NamespaceToTableName(namespace string) string {
+	if after, ok := strings.CutPrefix(namespace, DBPrefix); ok {
+		namespace = after
+	}
+
+	//  change all namespace to lowercase
+	namespace = strings.ToLower(namespace)
+
+	// replace . with _
+	namespace = strings.ReplaceAll(namespace, ".", "_")
+
+	return namespace
+}

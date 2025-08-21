@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type APIDefinitionAttributeConfig struct {
@@ -131,6 +132,58 @@ type TableColumnConfig struct {
 	Required bool     `json:"required"`
 }
 
+func (p *TableColumnConfig) ToDBTableColumn() (*DBTableColumn, error) {
+	// parse type
+	strType := ""
+	strTable := ""
+	switch p.Type {
+	case "PK", "Bool", "Int64", "Float64",
+		"String", "String16", "String32", "String64", "String256",
+		"List<String>", "Map<String>":
+		strType = p.Type
+		strTable = ""
+	default:
+		if strings.HasPrefix(p.Type, DBPrefix) {
+			strType = "LK"
+			strTable = NamespaceToTableName(p.Type)
+		} else if strings.HasPrefix(p.Type, "List<") && strings.HasSuffix(p.Type, ">") {
+			innerType := p.Type[5 : len(p.Type)-1]
+			if strings.HasPrefix(innerType, DBPrefix) {
+				strType = "LKList"
+				strTable = NamespaceToTableName(innerType)
+			} else {
+				return nil, fmt.Errorf("invalid column type: %s", p.Type)
+			}
+		} else if strings.HasPrefix(p.Type, "Map<") && strings.HasSuffix(p.Type, ">") {
+			innerType := p.Type[4 : len(p.Type)-1]
+			if strings.HasPrefix(innerType, DBPrefix) {
+				strType = "LKMap"
+				strTable = NamespaceToTableName(innerType)
+			} else {
+				return nil, fmt.Errorf("invalid column type: %s", p.Type)
+			}
+		} else {
+			return nil, fmt.Errorf("invalid column type: %s", p.Type)
+		}
+	}
+
+	// build query map
+	queryMap := map[string]bool{}
+	for _, v := range p.Query {
+		queryMap[v] = true
+	}
+
+	return &DBTableColumn{
+		Type:      strType,
+		QueryMap:  queryMap,
+		Unique:    p.Unique,
+		Index:     p.Index,
+		Order:     p.Order,
+		Required:  p.Required,
+		LinkTable: strTable,
+	}, nil
+}
+
 type TableViewConfig struct {
 	Cache   string   `json:"cache"`
 	Columns []string `json:"columns"`
@@ -165,8 +218,6 @@ func (p *TableConfig) ToApiConfig() (*APIConfig, error) {
 			return "List<String>"
 		case "Map<String>":
 			return "Map<String>"
-		case "Bytes":
-			return "Bytes"
 		default:
 			if strings.HasPrefix(v, "List<") && strings.HasSuffix(v, ">") {
 				innerType := v[5 : len(v)-1]
@@ -218,12 +269,75 @@ func (p *TableConfig) ToApiConfig() (*APIConfig, error) {
 }
 
 func ToDBTable(config *TableConfig) (*DBTable, error) {
+	// convert columns
+	columns := map[string]*DBTableColumn{}
+	for name, column := range config.Columns {
+		if dbColumn, err := column.ToDBTableColumn(); err != nil {
+			return nil, err
+		} else {
+			columns[name] = dbColumn
+		}
+	}
+
+	// convert views
+	views := map[string]*DBTableView{}
+	for name, view := range config.Views {
+		viewColumns := []*DBTableViewColumn{}
+
+		for _, viewColumn := range view.Columns {
+			columnArray := strings.Split(viewColumn, "@")
+			if column, ok := columns[columnArray[0]]; !ok {
+				return nil, fmt.Errorf("views.%s column %s not found", name, columnArray[0])
+			} else {
+				if len(columnArray) == 1 {
+					viewColumns = append(viewColumns, &DBTableViewColumn{
+						Name:      columnArray[0],
+						LinkTable: "",
+						LinkView:  "",
+					})
+				} else if len(columnArray) == 2 {
+					viewColumns = append(viewColumns, &DBTableViewColumn{
+						Name:      columnArray[0],
+						LinkTable: column.LinkTable,
+						LinkView:  columnArray[1],
+					})
+				} else {
+					return nil, fmt.Errorf("views.%s column %s invalid", name, viewColumn)
+				}
+			}
+		}
+
+		// build columnsSelect
+		columnsSelectList := []string{}
+		for _, viewColumn := range viewColumns {
+			columnsSelectList = append(columnsSelectList, viewColumn.Name)
+		}
+
+		if len(columnsSelectList) == 0 {
+			return nil, fmt.Errorf("views.%s has no columns", name)
+		}
+
+		// parse cache
+		cacheSecond, err := TimeStringToDuration(view.Cache)
+		if err != nil {
+			return nil, fmt.Errorf("views.%s cache invalid: %w", name, err)
+		}
+
+		views[name] = &DBTableView{
+			Columns:       viewColumns,
+			ColumnsSelect: strings.Join(columnsSelectList, ","),
+			CacheSecond:   int64(cacheSecond / time.Second),
+		}
+	}
+
 	return &DBTable{
-		Version: config.Version,
-		Name:    config.Table,
-		Columns: map[string]*DBTableColumn{},
-		Views:   map[string]*DBTableView{},
-		Hash:    "",
+		Version:   config.Version,
+		Table:     NamespaceToTableName(config.Table),
+		Columns:   columns,
+		Views:     views,
+		Namespace: config.Table,
+		Hash:      "",
+		File:      config.GetFilePath(),
 	}, nil
 }
 

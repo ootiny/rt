@@ -23,10 +23,11 @@ type DBTableView struct {
 }
 
 type DBTable struct {
-	Version string                    `json:"version"`
-	Name    string                    `json:"name"`
-	Columns map[string]*DBTableColumn `json:"columns"`
-	Views   map[string]*DBTableView   `json:"views"`
-	Hash    string                    `json:"hash"`
-	File    string                    `json:"file"`
+	Version   string                    `json:"version"`
+	Namespace string                    `json:"namespace"`
+	Table     string                    `json:"table"`
+	Columns   map[string]*DBTableColumn `json:"columns"`
+	Views     map[string]*DBTableView   `json:"views"`
+	Hash      string                    `json:"hash"`
+	File      string                    `json:"file"`
 }

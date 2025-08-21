@@ -146,7 +146,7 @@ func DBTypeToTableColumn(dbType string) (*DBTableColumn, error) {
 		if strings.HasPrefix(dbType, "List<") && strings.HasSuffix(dbType, ">") {
 			innerType := dbType[5 : len(dbType)-1]
 			if strings.HasPrefix(innerType, DBPrefix) {
-				strType = fmt.Sprintf("LKList")
+				strType = "LKList"
 				strTable = NamespaceToTableName(innerType)
 			} else {
 				return nil, fmt.Errorf("invalid column type: %s", dbType)
@@ -154,7 +154,7 @@ func DBTypeToTableColumn(dbType string) (*DBTableColumn, error) {
 		} else if strings.HasPrefix(dbType, "Map<") && strings.HasSuffix(dbType, ">") {
 			innerType := dbType[4 : len(dbType)-1]
 			if strings.HasPrefix(innerType, DBPrefix) {
-				strType = fmt.Sprintf("LKMap")
+				strType = "LKMap"
 				strTable = NamespaceToTableName(innerType)
 			} else {
 				return nil, fmt.Errorf("invalid column type: %s", dbType)

@@ -1,0 +1,70 @@
+{
+  "version": "rt.dbservice.v1",
+  "namespace": "DB.Geo",
+  "table": "geo",
+  "columns": {
+    "id": {
+      "type": "PK",
+      "queryMap": {
+        "=": true,
+        "in": true
+      },
+      "unique": false,
+      "index": false,
+      "order": false,
+      "required": false,
+      "linkTable": ""
+    },
+    "latitude": {
+      "type": "Float64",
+      "queryMap": {
+        "\u003c": true,
+        "=": true,
+        "\u003e": true
+      },
+      "unique": false,
+      "index": false,
+      "order": false,
+      "required": false,
+      "linkTable": ""
+    },
+    "longitude": {
+      "type": "Float64",
+      "queryMap": {
+        "\u003c": true,
+        "=": true,
+        "\u003e": true
+      },
+      "unique": false,
+      "index": false,
+      "order": false,
+      "required": false,
+      "linkTable": ""
+    }
+  },
+  "views": {
+    "Full": {
+      "columns": [
+        {
+          "name": "id",
+          "linkTable": "",
+          "linkView": ""
+        },
+        {
+          "name": "latitude",
+          "linkTable": "",
+          "linkView": ""
+        },
+        {
+          "name": "longitude",
+          "linkTable": "",
+          "linkView": ""
+        }
+      ],
+      "columnsSelect": "id,latitude,longitude",
+      "cacheSecond": 2592000
+    }
+  },
+  "hash": "",
+  "file": "/Users/tianshuo/github/rt/meta/DB.Geo.json"
+}

@@ -1,0 +1,102 @@
+{
+  "version": "rt.dbservice.v1",
+  "namespace": "DB.City",
+  "table": "city",
+  "columns": {
+    "active": {
+      "type": "Bool",
+      "queryMap": {
+        "=": true,
+        "in": true
+      },
+      "unique": false,
+      "index": false,
+      "order": false,
+      "required": false,
+      "linkTable": ""
+    },
+    "geo": {
+      "type": "LK",
+      "queryMap": {
+        "=": true,
+        "in": true
+      },
+      "unique": false,
+      "index": false,
+      "order": false,
+      "required": false,
+      "linkTable": "geo"
+    },
+    "id": {
+      "type": "PK",
+      "queryMap": {
+        "=": true,
+        "in": true
+      },
+      "unique": false,
+      "index": false,
+      "order": false,
+      "required": true,
+      "linkTable": ""
+    },
+    "name": {
+      "type": "String256",
+      "queryMap": {
+        "=": true,
+        "in": true,
+        "like": true
+      },
+      "unique": false,
+      "index": false,
+      "order": true,
+      "required": true,
+      "linkTable": ""
+    }
+  },
+  "views": {
+    "Full": {
+      "columns": [
+        {
+          "name": "id",
+          "linkTable": "",
+          "linkView": ""
+        },
+        {
+          "name": "name",
+          "linkTable": "",
+          "linkView": ""
+        },
+        {
+          "name": "geo",
+          "linkTable": "geo",
+          "linkView": "Full"
+        },
+        {
+          "name": "active",
+          "linkTable": "",
+          "linkView": ""
+        }
+      ],
+      "columnsSelect": "id,name,geo,active",
+      "cacheSecond": 2592000
+    },
+    "Simple": {
+      "columns": [
+        {
+          "name": "id",
+          "linkTable": "",
+          "linkView": ""
+        },
+        {
+          "name": "name",
+          "linkTable": "",
+          "linkView": ""
+        }
+      ],
+      "columnsSelect": "id,name",
+      "cacheSecond": 2592000
+    }
+  },
+  "hash": "",
+  "file": "/Users/tianshuo/github/rt/meta/DB.City.json"
+}

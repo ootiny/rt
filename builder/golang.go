@@ -348,17 +348,18 @@ func (p *GoBuilder) buildServerWithConfig(apiConfig *APIConfig) error {
 func (p *GoBuilder) buildDB() error {
 	assetDir := filepath.Join(p.output.Dir, "db")
 
-	// write p.rtConfig.Database to p.output.Dir/assets/db/db.json
 	if err := WriteJSONFile(filepath.Join(assetDir, "db.json"), p.rtConfig.Database); err != nil {
 		return fmt.Errorf("failed to write assets file: %v", err)
 	}
 
-	// filter p.apiConfigs by DBVersions
-
-	// convert dbConfigs to DBServiceConfig
-	// for _, dbConfig := range dbConfigs {
-
-	// }
+	tableDir := filepath.Join(assetDir, "tables")
+	for _, dbConfig := range p.dbConfigs {
+		if dbTableConfig, err := dbConfig.ToDBTable(); err != nil {
+			return err
+		} else if err := WriteJSONFile(filepath.Join(tableDir, fmt.Sprintf("%s.json", dbConfig.Table)), dbTableConfig); err != nil {
+			return fmt.Errorf("failed to write assets file: %v", err)
+		}
+	}
 
 	return nil
 }

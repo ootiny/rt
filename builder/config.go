@@ -268,10 +268,10 @@ func (p *TableConfig) ToApiConfig() (*APIConfig, error) {
 	}, nil
 }
 
-func ToDBTable(config *TableConfig) (*DBTable, error) {
+func (p *TableConfig) ToDBTable() (*DBTable, error) {
 	// convert columns
 	columns := map[string]*DBTableColumn{}
-	for name, column := range config.Columns {
+	for name, column := range p.Columns {
 		if dbColumn, err := column.ToDBTableColumn(); err != nil {
 			return nil, err
 		} else {
@@ -281,7 +281,7 @@ func ToDBTable(config *TableConfig) (*DBTable, error) {
 
 	// convert views
 	views := map[string]*DBTableView{}
-	for name, view := range config.Views {
+	for name, view := range p.Views {
 		viewColumns := []*DBTableViewColumn{}
 
 		for _, viewColumn := range view.Columns {
@@ -331,13 +331,13 @@ func ToDBTable(config *TableConfig) (*DBTable, error) {
 	}
 
 	return &DBTable{
-		Version:   config.Version,
-		Table:     NamespaceToTableName(config.Table),
+		Version:   "rt.dbservice.v1",
+		Table:     NamespaceToTableName(p.Table),
 		Columns:   columns,
 		Views:     views,
-		Namespace: config.Table,
+		Namespace: p.Table,
 		Hash:      "",
-		File:      config.GetFilePath(),
+		File:      p.GetFilePath(),
 	}, nil
 }
 

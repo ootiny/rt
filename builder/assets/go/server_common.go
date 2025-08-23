@@ -120,11 +120,8 @@ func apiHandler(cors bool, w Response, r Request) {
 		}
 	} else {
 		data := r.Data()
-
-		if ret == nil || ret.Code == 0 {
-			ctx := NewContext(r, w)
-			ret = fn(ctx, data)
-		}
+		ctx := NewContext(r, w)
+		ret = fn(ctx, data)
 	}
 
 	if ret.Code == 0 {

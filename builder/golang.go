@@ -217,9 +217,13 @@ func (p *GoBuilder) buildServerWithConfig(apiConfig *APIConfig) error {
 		needImportBasePackage = true
 
 		for name, action := range apiConfig.Actions {
-			parameters := []string{}
+			parameters := []string{
+				fmt.Sprintf("ctx *%s.Context", p.output.GoPackage),
+			}
 			structParameters := []string{}
-			callParameters := []string{}
+			callParameters := []string{
+				"ctx",
+			}
 			fullActionName := apiConfig.Namespace + ":" + name
 			for _, parameter := range action.Parameters {
 				typeName, typePkg := toGolangType(p.location, p.output.GoModule, currentPackage, parameter.Type)

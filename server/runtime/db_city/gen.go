@@ -5,6 +5,24 @@ import (
 	"github.com/ootiny/rt/server/runtime"
 )
 
+// definition: DB.City@Simple
+type Simple struct {
+	Id string `json:"id" required:"true"`
+	Name string `json:"name" required:"true"`
+}
+
+type SimpleBytes = []byte
+func UnmarshalSimple(data []byte, v *Simple) error {
+	 return runtime.JsonUnmarshal(data, v)
+}
+func SimpleBytesToSimple(data []byte) (*Simple, error) {
+	var v Simple
+	if err := runtime.JsonUnmarshal(data, &v); err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
 // definition: DB.City@Full
 type Full struct {
 	Id string `json:"id" required:"true"`
@@ -19,24 +37,6 @@ func UnmarshalFull(data []byte, v *Full) error {
 }
 func FullBytesToFull(data []byte) (*Full, error) {
 	var v Full
-	if err := runtime.JsonUnmarshal(data, &v); err != nil {
-		return nil, err
-	}
-	return &v, nil
-}
-
-// definition: DB.City@Simple
-type Simple struct {
-	Id string `json:"id" required:"true"`
-	Name string `json:"name" required:"true"`
-}
-
-type SimpleBytes = []byte
-func UnmarshalSimple(data []byte, v *Simple) error {
-	 return runtime.JsonUnmarshal(data, v)
-}
-func SimpleBytesToSimple(data []byte) (*Simple, error) {
-	var v Simple
 	if err := runtime.JsonUnmarshal(data, &v); err != nil {
 		return nil, err
 	}

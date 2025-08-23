@@ -13,14 +13,14 @@ type CityList struct {
 
 // Action: API.System.City:Test
 var fnTest FuncTest
-type FuncTest = func() ([]db_city.Simple, runtime.Error)
+type FuncTest = func(ctx *runtime.Context) ([]db_city.Simple, runtime.Error)
 func HookTest (fn FuncTest) {
 	fnTest = fn
 }
 
 // Action: API.System.City:GetCityList
 var fnGetCityList FuncGetCityList
-type FuncGetCityList = func(country string) (CityList, runtime.Error)
+type FuncGetCityList = func(ctx *runtime.Context, country string) (CityList, runtime.Error)
 func HookGetCityList (fn FuncGetCityList) {
 	fnGetCityList = fn
 }
@@ -29,7 +29,7 @@ func init() {
 	runtime.RegisterHandler("API.System.City:Test", func(ctx *runtime.Context, data []byte) *runtime.Return {
 		if fnTest == nil {
 			return &runtime.Return{Code: runtime.ErrActionNotImplemented, Message: "API.System.City:Test is not implemented"}
-		} else if result, err := fnTest(); err != nil {
+		} else if result, err := fnTest(ctx); err != nil {
 			return &runtime.Return{Code: err.GetCode(), Message: err.Error()}
 		} else {
 			return &runtime.Return{Data: result}
@@ -45,7 +45,7 @@ func init() {
 
 		if fnGetCityList == nil {
 			return &runtime.Return{Code: runtime.ErrActionNotImplemented, Message: "API.System.City:GetCityList is not implemented"}
-		} else if result, err := fnGetCityList(v.Country); err != nil {
+		} else if result, err := fnGetCityList(ctx, v.Country); err != nil {
 			return &runtime.Return{Code: err.GetCode(), Message: err.Error()}
 		} else {
 			return &runtime.Return{Data: result}

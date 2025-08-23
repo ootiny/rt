@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	api_system_city.HookGetCityList(func(country string) (api_system_city.CityList, runtime.Error) {
+	api_system_city.HookGetCityList(func(ctx *runtime.Context, country string) (api_system_city.CityList, runtime.Error) {
 		return api_system_city.CityList{}, nil
 	})
 }

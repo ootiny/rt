@@ -21,6 +21,25 @@ type Error interface {
 	Error() string
 }
 
+type GoError struct {
+	code int
+	err  error
+}
+
+func NewError(code int, err error) Error {
+	return &GoError{
+		code: code,
+		err:  err,
+	}
+}
+
+func (p *GoError) GetCode() int {
+	return p.code
+}
+func (p *GoError) Error() string {
+	return p.err.Error()
+}
+
 type Request interface {
 	Action() string
 	Cookie(name string) (*http.Cookie, error)
@@ -65,25 +84,6 @@ type Return struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    any    `json:"data"`
-}
-
-type GoError struct {
-	code int
-	err  error
-}
-
-func NewError(code int, err error) Error {
-	return &GoError{
-		code: code,
-		err:  err,
-	}
-}
-
-func (p *GoError) GetCode() int {
-	return p.code
-}
-func (p *GoError) Error() string {
-	return p.err.Error()
 }
 
 func RegisterHandler(action string, handler func(ctx *Context, data []byte) *Return) {

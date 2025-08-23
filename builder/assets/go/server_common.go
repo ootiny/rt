@@ -42,6 +42,7 @@ func (p *GoError) Error() string {
 
 type Request interface {
 	Action() string
+	Data() []byte
 	Cookie(name string) (*http.Cookie, error)
 	Header(name string) string
 }
@@ -92,4 +93,51 @@ func RegisterHandler(action string, handler func(ctx *Context, data []byte) *Ret
 
 func JsonUnmarshal(data []byte, v any) error {
 	return json.Unmarshal(data, v)
+}
+
+func apiHandler(cors bool, w Response, r Request) {
+	// Set CORS headers
+	if cors {
+		w.SetHeader("Access-Control-Allow-Origin", "*")
+
+		// Handle preflight OPTIONS request only when CORS is enabled
+		if r.Header("Access-Control-Request-Method") == "OPTIONS" {
+			w.SetHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.SetHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+
+	action := r.Action()
+	ret := (*Return)(nil)
+	fn, ok := gAPIMap[action]
+
+	if !ok {
+		ret = &Return{
+			Code:    ErrActionNotFound,
+			Message: fmt.Sprintf("action %s not found", action),
+		}
+	} else {
+		data := r.Data()
+
+		if ret == nil || ret.Code == 0 {
+			ctx := NewContext(r, w)
+			ret = fn(ctx, data)
+		}
+	}
+
+	if ret.Code == 0 {
+		ret.Code = http.StatusOK
+	}
+
+	w.SetHeader("Content-Type", "application/json")
+
+	if retBytes, err := json.Marshal(ret); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.WriteJson([]byte(`{"code":500,"message":"Internal Server Error"}`))
+	} else {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.WriteJson(retBytes)
+	}
 }

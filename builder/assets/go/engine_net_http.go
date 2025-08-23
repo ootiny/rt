@@ -1,19 +1,28 @@
 package _rt_package_name_
 
 import (
-	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 )
 
 type GoRequest struct {
-	action string
-	r      *http.Request
+	r *http.Request
 }
 
 func (p *GoRequest) Action() string {
-	return p.action
+	return p.r.URL.Query().Get("a")
+}
+
+func (p *GoRequest) Data() []byte {
+	if p.r.Method == http.MethodGet {
+		return []byte(p.r.URL.Query().Get("d"))
+	} else {
+		body, err := io.ReadAll(p.r.Body)
+		if err != nil {
+			return nil
+		}
+		return body
+	}
 }
 
 func (p *GoRequest) Cookie(name string) (*http.Cookie, error) {
@@ -43,66 +52,9 @@ func (p *GoResponse) WriteHeader(code int) {
 func NewHttpServer(addr string, certFile string, keyFile string, cors bool) *Server {
 	mux := http.NewServeMux()
 
-	// API handler function with CORS support
-	apiHandler := func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
-		if cors {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-
-			// Handle preflight OPTIONS request only when CORS is enabled
-			if r.Method == http.MethodOptions {
-				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-		}
-
-		action := r.URL.Query().Get("a")
-		ret := (*Return)(nil)
-		fn, ok := gAPIMap[action]
-
-		if !ok {
-			ret = &Return{
-				Code:    ErrActionNotFound,
-				Message: fmt.Sprintf("action %s not found", action),
-			}
-		} else {
-			data := []byte(r.URL.Query().Get("d"))
-
-			if len(data) == 0 {
-				if body, err := io.ReadAll(r.Body); err != nil {
-					ret = &Return{
-						Code:    ErrReadData,
-						Message: fmt.Sprintf("read data error: %s", err.Error()),
-					}
-				} else {
-					data = body
-				}
-			}
-
-			if ret == nil || ret.Code == 0 {
-				ctx := NewContext(&GoRequest{action: action, r: r}, &GoResponse{w: w})
-				ret = fn(ctx, data)
-			}
-		}
-
-		if ret.Code == 0 {
-			ret.Code = http.StatusOK
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-
-		if retBytes, err := json.Marshal(ret); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte(`{"code":500,"message":"Internal Server Error"}`))
-		} else {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write(retBytes)
-		}
-	}
-
-	mux.HandleFunc("/api", apiHandler)
+	mux.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
+		apiHandler(cors, &GoResponse{w: w}, &GoRequest{r: r})
+	})
 
 	return &Server{
 		addr:     addr,

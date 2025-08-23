@@ -299,10 +299,9 @@ func (p *GoBuilder) buildServerWithConfig(apiConfig *APIConfig) error {
 			}
 
 			registerFuncs = append(registerFuncs, fmt.Sprintf(
-				"\t%s.RegisterHandler(\"%s\", func(ctx %s.Context, response %s.Response, data []byte) *%s.Return {%s\n\t})",
+				"\t%s.RegisterHandler(\"%s\", func(ctx *%s.Context, data []byte) *%s.Return {%s\n\t})",
 				p.output.GoPackage,
 				fullActionName,
-				p.output.GoPackage,
 				p.output.GoPackage,
 				p.output.GoPackage,
 				funcBody,

@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-var gHttpActionMap = map[string]func(ctx Context, w Response, data []byte) *Return{}
+var gAPIMap = map[string]func(ctx *Context, data []byte) *Return{}
 
 const ErrInternal = 1001
 const ErrActionNotFound = 1002
@@ -16,34 +16,49 @@ const ErrReadData = 1005
 const ErrUnmarshalData = 1006
 const ErrAPIExec = 2001
 
-type GoContext struct {
-	GoRequestContext
-	ErrorContext
-}
-
-func (p *GoContext) Request() RequestContext {
-	return &p.GoRequestContext
-}
-
 type Error interface {
 	GetCode() int
 	Error() string
 }
 
-type Response interface {
-	WriteJson(data []byte) (int, error)
-}
-
-type RequestContext interface {
+type Request interface {
 	Action() string
 	Cookie(name string) (*http.Cookie, error)
 	Header(name string) string
 }
 
-type Context interface {
-	Request() RequestContext
-	Errorf(format string, args ...any) Error
-	ErrorWithCodef(code int, format string, args ...any) Error
+type Response interface {
+	SetHeader(name string, value string)
+	WriteHeader(code int)
+	WriteJson(data []byte) (int, error)
+}
+
+func NewContext(request Request, response Response) *Context {
+	return &Context{
+		request:  request,
+		response: response,
+	}
+}
+
+type Context struct {
+	request  Request
+	response Response
+}
+
+func (p *Context) Request() Request {
+	return p.request
+}
+
+func (p *Context) Response() Response {
+	return p.response
+}
+
+func (p *Context) Errorf(format string, args ...any) Error {
+	return NewError(ErrInternal, fmt.Errorf(format, args...))
+}
+
+func (p *Context) ErrorWithCodef(code int, format string, args ...any) Error {
+	return NewError(code, fmt.Errorf(format, args...))
 }
 
 type Return struct {
@@ -71,18 +86,8 @@ func (p *GoError) Error() string {
 	return p.err.Error()
 }
 
-type ErrorContext struct{}
-
-func (p *ErrorContext) Errorf(format string, args ...any) Error {
-	return NewError(ErrInternal, fmt.Errorf(format, args...))
-}
-
-func (p *ErrorContext) ErrorWithCodef(code int, format string, args ...any) Error {
-	return NewError(code, fmt.Errorf(format, args...))
-}
-
-func RegisterHandler(action string, handler func(ctx Context, response Response, data []byte) *Return) {
-	gHttpActionMap[action] = handler
+func RegisterHandler(action string, handler func(ctx *Context, data []byte) *Return) {
+	gAPIMap[action] = handler
 }
 
 func JsonUnmarshal(data []byte, v any) error {

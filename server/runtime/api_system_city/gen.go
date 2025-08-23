@@ -26,7 +26,7 @@ func HookGetCityList (fn FuncGetCityList) {
 }
 
 func init() {
-	runtime.RegisterHandler("API.System.City:Test", func(ctx runtime.Context, response runtime.Response, data []byte) *runtime.Return {
+	runtime.RegisterHandler("API.System.City:Test", func(ctx *runtime.Context, data []byte) *runtime.Return {
 		if fnTest == nil {
 			return &runtime.Return{Code: runtime.ErrActionNotImplemented, Message: "API.System.City:Test is not implemented"}
 		} else if result, err := fnTest(); err != nil {
@@ -35,7 +35,7 @@ func init() {
 			return &runtime.Return{Data: result}
 		}
 	})
-	runtime.RegisterHandler("API.System.City:GetCityList", func(ctx runtime.Context, response runtime.Response, data []byte) *runtime.Return {
+	runtime.RegisterHandler("API.System.City:GetCityList", func(ctx *runtime.Context, data []byte) *runtime.Return {
 		var v struct {
 			Country string `json:"country" required:"true"`
 		}

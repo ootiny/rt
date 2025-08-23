@@ -7,20 +7,20 @@ import (
 	"net/http"
 )
 
-type GoRequestContext struct {
+type GoRequest struct {
 	action string
 	r      *http.Request
 }
 
-func (p *GoRequestContext) Action() string {
+func (p *GoRequest) Action() string {
 	return p.action
 }
 
-func (p *GoRequestContext) Cookie(name string) (*http.Cookie, error) {
+func (p *GoRequest) Cookie(name string) (*http.Cookie, error) {
 	return p.r.Cookie(name)
 }
 
-func (p *GoRequestContext) Header(name string) string {
+func (p *GoRequest) Header(name string) string {
 	return p.r.Header.Get(name)
 }
 
@@ -30,6 +30,14 @@ type GoResponse struct {
 
 func (p *GoResponse) WriteJson(data []byte) (int, error) {
 	return p.w.Write(data)
+}
+
+func (p *GoResponse) SetHeader(name string, value string) {
+	p.w.Header().Set(name, value)
+}
+
+func (p *GoResponse) WriteHeader(code int) {
+	p.w.WriteHeader(code)
 }
 
 func NewHttpServer(addr string, certFile string, keyFile string, cors bool) *Server {
@@ -52,7 +60,7 @@ func NewHttpServer(addr string, certFile string, keyFile string, cors bool) *Ser
 
 		action := r.URL.Query().Get("a")
 		ret := (*Return)(nil)
-		fn, ok := gHttpActionMap[action]
+		fn, ok := gAPIMap[action]
 
 		if !ok {
 			ret = &Return{
@@ -74,14 +82,8 @@ func NewHttpServer(addr string, certFile string, keyFile string, cors bool) *Ser
 			}
 
 			if ret == nil || ret.Code == 0 {
-				ret = fn(
-					&GoContext{
-						GoRequestContext: GoRequestContext{action: action, r: r},
-						ErrorContext:     ErrorContext{},
-					},
-					&GoResponse{w: w},
-					data,
-				)
+				ctx := NewContext(&GoRequest{action: action, r: r}, &GoResponse{w: w})
+				ret = fn(ctx, data)
 			}
 		}
 

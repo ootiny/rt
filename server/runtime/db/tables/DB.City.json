@@ -78,7 +78,8 @@
         }
       ],
       "columnsSelect": "id,name,geo,active",
-      "cacheSecond": 2592000
+      "cacheSecond": 2592000,
+      "hash": "BamW896AN"
     },
     "Simple": {
       "columns": [
@@ -94,9 +95,9 @@
         }
       ],
       "columnsSelect": "id,name",
-      "cacheSecond": 2592000
+      "cacheSecond": 2592000,
+      "hash": "C+hbob2Or"
     }
   },
-  "hash": "",
   "file": "/Users/tianshuo/github/rt/meta/DB.City.json"
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -279,10 +280,26 @@ func (p *TableConfig) ToDBTable() (*DBTable, error) {
 		}
 	}
 
+	viewNames := []string{}
+	for name := range p.Views {
+		viewNames = append(viewNames, name)
+	}
+	sort.Strings(viewNames)
+
 	// convert views
 	views := map[string]*DBTableView{}
 	for name, view := range p.Views {
+		viewHashArr := []string{}
 		viewColumns := []*DBTableViewColumn{}
+
+		// get view index by viewNames
+		viewIndex := uint64(0)
+		for i, viewName := range viewNames {
+			if viewName == name {
+				viewIndex = uint64(i)
+				break
+			}
+		}
 
 		for _, viewColumn := range view.Columns {
 			columnArray := strings.Split(viewColumn, "@")
@@ -295,17 +312,22 @@ func (p *TableConfig) ToDBTable() (*DBTable, error) {
 						LinkTable: "",
 						LinkView:  "",
 					})
+					viewHashArr = append(viewHashArr, columnArray[0])
 				} else if len(columnArray) == 2 {
 					viewColumns = append(viewColumns, &DBTableViewColumn{
 						Name:      columnArray[0],
 						LinkTable: column.LinkTable,
 						LinkView:  columnArray[1],
 					})
+					viewHashArr = append(viewHashArr, columnArray[0]+"@"+column.LinkTable+"@"+columnArray[1])
 				} else {
 					return nil, fmt.Errorf("views.%s column %s invalid", name, viewColumn)
 				}
 			}
 		}
+
+		// sort viewHashArr
+		sort.Strings(viewHashArr)
 
 		// build columnsSelect
 		columnsSelectList := []string{}
@@ -323,10 +345,12 @@ func (p *TableConfig) ToDBTable() (*DBTable, error) {
 			return nil, fmt.Errorf("views.%s cache invalid: %w", name, err)
 		}
 
+		// make md5Hash
 		views[name] = &DBTableView{
 			Columns:       viewColumns,
 			ColumnsSelect: strings.Join(columnsSelectList, ","),
 			CacheSecond:   int64(cacheSecond / time.Second),
+			Hash:          GetViewHash(viewIndex+1, strings.Join(viewHashArr, ":")),
 		}
 	}
 
@@ -336,7 +360,6 @@ func (p *TableConfig) ToDBTable() (*DBTable, error) {
 		Columns:   columns,
 		Views:     views,
 		Namespace: p.Table,
-		Hash:      "",
 		File:      p.GetFilePath(),
 	}, nil
 }

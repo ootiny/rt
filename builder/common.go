@@ -1,7 +1,9 @@
 package builder
 
 import (
+	"crypto/md5"
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -252,4 +254,30 @@ func NamespaceToTableName(namespace string) string {
 	namespace = strings.ReplaceAll(namespace, ".", "_")
 
 	return namespace
+}
+
+func GetViewHash(viewIndex uint64, data string) string {
+	// 使用标准 Base64 字母表，按 6 bit 为一位进行“进制转换”编码
+	// 与字节级 Base64 不同，这里是数值的 64 进制表示，长度随值大小变化
+	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	if viewIndex == 0 {
+		return string(alphabet[0]) // 'A'
+	}
+
+	// 64 位整数最多需要 11 个 base64 位（ceil(64/6) = 11）
+	buf := make([]byte, 0, 11)
+	for viewIndex > 0 {
+		idx := viewIndex & 63 // 取低 6 位
+		buf = append(buf, alphabet[idx])
+		viewIndex >>= 6
+	}
+
+	// 反转为高位在前
+	for l, r := 0, len(buf)-1; l < r; l, r = l+1, r-1 {
+		buf[l], buf[r] = buf[r], buf[l]
+	}
+
+	h := md5.Sum([]byte(data))
+	// 仅取前 6 字节（48 bit），编码成不带填充的 base64，得到正好 8 个字符
+	return string(buf) + base64.RawStdEncoding.EncodeToString(h[:6])
 }

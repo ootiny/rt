@@ -62,9 +62,9 @@
         }
       ],
       "columnsSelect": "id,latitude,longitude",
-      "cacheSecond": 2592000
+      "cacheSecond": 2592000,
+      "hash": "BbL+7NdtR"
     }
   },
-  "hash": "",
   "file": "/Users/tianshuo/github/rt/meta/DB.Geo.json"
 }

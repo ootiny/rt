@@ -20,6 +20,7 @@ type DBTableView struct {
 	Columns       []*DBTableViewColumn `json:"columns"`
 	ColumnsSelect string               `json:"columnsSelect"`
 	CacheSecond   int64                `json:"cacheSecond"`
+	Hash          string               `json:"hash"`
 }
 
 type DBTable struct {
@@ -28,6 +29,5 @@ type DBTable struct {
 	Table     string                    `json:"table"`
 	Columns   map[string]*DBTableColumn `json:"columns"`
 	Views     map[string]*DBTableView   `json:"views"`
-	Hash      string                    `json:"hash"`
 	File      string                    `json:"file"`
 }

@@ -14,6 +14,16 @@ const ErrActionNotImplemented = 1003
 const ErrMethodNotSupported = 1004
 const ErrReadData = 1005
 const ErrUnmarshalData = 1006
+const ErrAPIExec = 2001
+
+type GoContext struct {
+	GoRequestContext
+	ErrorContext
+}
+
+func (p *GoContext) Request() RequestContext {
+	return &p.GoRequestContext
+}
 
 type Error interface {
 	GetCode() int

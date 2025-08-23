@@ -24,15 +24,6 @@ func (p *GoRequestContext) Header(name string) string {
 	return p.r.Header.Get(name)
 }
 
-type GoContext struct {
-	GoRequestContext
-	ErrorContext
-}
-
-func (p *GoContext) Request() RequestContext {
-	return &p.GoRequestContext
-}
-
 type GoResponse struct {
 	w http.ResponseWriter
 }

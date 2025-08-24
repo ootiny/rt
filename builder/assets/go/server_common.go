@@ -81,6 +81,10 @@ func (p *Context) ErrorWithCodef(code int, format string, args ...any) Error {
 	return NewError(code, fmt.Errorf(format, args...))
 }
 
+func (p *Context) Close(dbCommit bool) error {
+	return nil
+}
+
 type Return struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -93,6 +97,45 @@ func RegisterHandler(action string, handler func(ctx *Context, data []byte) *Ret
 
 func JsonUnmarshal(data []byte, v any) error {
 	return json.Unmarshal(data, v)
+}
+
+func evalAction(w Response, r Request) (ret *Return) {
+	ctx := NewContext(r, w)
+	action := ctx.Request().Action()
+	data := ctx.Request().Data()
+	fn, ok := gAPIMap[action]
+
+	if !ok {
+		return &Return{
+			Code:    ErrActionNotFound,
+			Message: fmt.Sprintf("action %s not found", action),
+		}
+	}
+
+	defer func() {
+		if reason := recover(); reason != nil {
+			_ = ctx.Close(false)
+			ret = &Return{
+				Code:    ErrAPIExec,
+				Message: fmt.Sprintf("action exec error: %s", reason),
+			}
+		} else if ret != nil {
+			if closeErr := ctx.Close(ret.Code == http.StatusOK || ret.Code == 0); closeErr != nil {
+				ret = &Return{
+					Code:    ErrInternal,
+					Message: fmt.Sprintf("close error: %s", closeErr.Error()),
+				}
+			}
+		} else {
+			_ = ctx.Close(false)
+			ret = &Return{
+				Code:    ErrInternal,
+				Message: "return is nil",
+			}
+		}
+	}()
+
+	return fn(ctx, data)
 }
 
 func apiHandler(cors bool, w Response, r Request) {
@@ -109,21 +152,7 @@ func apiHandler(cors bool, w Response, r Request) {
 		}
 	}
 
-	action := r.Action()
-	ret := (*Return)(nil)
-	fn, ok := gAPIMap[action]
-
-	if !ok {
-		ret = &Return{
-			Code:    ErrActionNotFound,
-			Message: fmt.Sprintf("action %s not found", action),
-		}
-	} else {
-		data := r.Data()
-		ctx := NewContext(r, w)
-		ret = fn(ctx, data)
-	}
-
+	ret := evalAction(w, r)
 	if ret.Code == 0 {
 		ret.Code = http.StatusOK
 	}

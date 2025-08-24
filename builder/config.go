@@ -393,10 +393,17 @@ type RTDatabaseConfig struct {
 	CacheSize string `json:"cacheSize"`
 }
 
+type RTCacheConfig struct {
+	Type string `json:"type" required:"true"`
+	Size string `json:"size" required:"true"`
+	Addr string `json:"addr"`
+}
+
 type RTConfig struct {
 	Listen       string           `json:"listen"`
 	Outputs      []RTOutputConfig `json:"outputs"`
 	Database     RTDatabaseConfig `json:"database"`
+	Cache        RTCacheConfig    `json:"cache"`
 	__filepath__ string
 }
 

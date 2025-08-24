@@ -20,7 +20,10 @@
     "port": 12345,
     "user": "postgres",
     "password": "ts2019",
-    "dbName": "test",
-    "cacheSize": "1g"
+    "dbName": "test"
+  },
+  "cache": {
+    "type": "local",
+    "size": "1g"
   }
 }

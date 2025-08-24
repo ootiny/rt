@@ -3,7 +3,7 @@ package _rt_package_name_
 import (
 	"time"
 
-	"github.com/ykytech/study-blocks/main/libs/rt/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 )
 
 type IMemCache interface {
@@ -42,7 +42,10 @@ func (p *LocalMemCache) Close() error {
 // Set 设置一个缓存条目
 func (p *LocalMemCache) Set(key string, value []byte, expirationSecond uint32) bool {
 	if expirationSecond > 0 {
-		return p.cache.SetWithTTL(key, value, int64(len(key)+len(value)), time.Duration(expirationSecond)*time.Second)
+		return p.cache.SetWithTTL(
+			key, value, int64(len(key)+len(value)),
+			time.Duration(expirationSecond)*time.Second,
+		)
 	} else {
 		return p.cache.Set(key, value, int64(len(key)+len(value)))
 	}

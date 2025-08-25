@@ -1,9 +1,0 @@
-{
-  "driver": "postgres",
-  "host": "127.0.0.1",
-  "port": 12345,
-  "user": "postgres",
-  "password": "ts2019",
-  "dbName": "test",
-  "cacheSize": "1g"
-}

@@ -384,13 +384,12 @@ type RTOutputConfig struct {
 }
 
 type RTDatabaseConfig struct {
-	Driver    string `json:"driver" required:"true"`
-	Host      string `json:"host" required:"true"`
-	Port      uint16 `json:"port" required:"true"`
-	User      string `json:"user" required:"true"`
-	Password  string `json:"password" required:"true"`
-	DBName    string `json:"dbName" required:"true"`
-	CacheSize string `json:"cacheSize"`
+	Driver   string `json:"driver" required:"true"`
+	Host     string `json:"host" required:"true"`
+	Port     uint16 `json:"port" required:"true"`
+	User     string `json:"user" required:"true"`
+	Password string `json:"password" required:"true"`
+	DBName   string `json:"dbName" required:"true"`
 }
 
 type RTCacheConfig struct {
@@ -400,10 +399,10 @@ type RTCacheConfig struct {
 }
 
 type RTConfig struct {
-	Listen       string           `json:"listen"`
-	Outputs      []RTOutputConfig `json:"outputs"`
-	Database     RTDatabaseConfig `json:"database"`
-	Cache        RTCacheConfig    `json:"cache"`
+	Listen       string            `json:"listen"`
+	Outputs      []*RTOutputConfig `json:"outputs"`
+	Database     *RTDatabaseConfig `json:"database"`
+	Cache        *RTCacheConfig    `json:"cache"`
 	__filepath__ string
 }
 

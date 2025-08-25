@@ -20,7 +20,7 @@ type BuildContext struct {
 	rtConfig   *RTConfig
 	apiConfigs []*APIConfig
 	dbConfigs  []*TableConfig
-	output     RTOutputConfig
+	output     *RTOutputConfig
 }
 
 func ParseProjectDir(filePath string, projectDir string) (string, error) {

@@ -15,26 +15,7 @@ const ErrMethodNotSupported = 1004
 const ErrReadData = 1005
 const ErrUnmarshalData = 1006
 const ErrAPIExec = 2001
-
-type RTDatabaseConfig struct {
-	Driver   string `json:"driver" required:"true"`
-	Host     string `json:"host" required:"true"`
-	Port     uint16 `json:"port" required:"true"`
-	User     string `json:"user" required:"true"`
-	Password string `json:"password" required:"true"`
-	DBName   string `json:"dbName" required:"true"`
-}
-
-type RTCacheConfig struct {
-	Type string `json:"type" required:"true"`
-	Size string `json:"size" required:"true"`
-	Addr string `json:"addr"`
-}
-
-type RTConfig struct {
-	Database RTDatabaseConfig `json:"database"`
-	Cache    RTCacheConfig    `json:"cache"`
-}
+const ErrDBSystem = 3001
 
 type Error interface {
 	GetCode() int
